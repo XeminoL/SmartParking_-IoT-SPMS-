@@ -310,9 +310,9 @@ const app = {
         ? { name: 'Op. Trần Văn B', sub: 'Lot LTK-Main', role }
         : { name: 'Admin. Lê Thị C', sub: 'System Administrator', role };
     $('#login').style.display = 'none';
-    $('#app').style.display = 'flex';
+    $('#app').style.display = 'block';
     $('#roleBadge').textContent = { driver: 'Driver', operator: 'Operator', admin: 'Admin' }[role];
-    $('#roleBadge').className = 'role-badge role-' + role;
+    $('#roleBadge').className = 'role-badge';
     $('#userChip').textContent = STATE.user.name;
     services.audit(STATE.user.name, `Logged in as ${role}`, 'info');
     this.render();
@@ -440,20 +440,16 @@ const app = {
 
 /* -------- shared render bits -------- */
 function tilesHtml(tiles) {
-  return `<div class="tiles">${tiles.map(t => `<div class="tile"><div class="k">${t.k}</div><div class="v">${t.v}</div></div>`).join('')}</div>`;
+  // plain list, not a KPI-tile row
+  return `<ul style="margin:4px 0 4px 20px">${tiles.map(t => `<li>${t.k}: <b>${t.v}</b></li>`).join('')}</ul>`;
 }
 function zoneRowsHtml() {
-  return services.currentZones().map(z => {
+  // plain table of zones with the sign state as text
+  const rows = services.currentZones().map(z => {
     const free = services.zoneFree(z), pct = services.zoneOccPct(z), st = services.signState(pct);
-    const guide = (st === 'red' || st === 'orange') ? (services.nearestFreeZone(z.name) ? `try Zone ${services.nearestFreeZone(z.name).name}` : 'no free zone') : '';
-    return `<div class="zone-row">
-      <span class="dot s-${st}"></span>
-      <span class="zone-name">Zone ${z.name}</span>
-      <span class="bar"><i class="s-${st}" style="width:${pct}%"></i></span>
-      <span class="zone-free">${free}/${z.cap} free, ${pct}% full</span>
-      <span class="zone-guide">${guide}</span>
-    </div>`;
+    return `<tr><td>Zone ${z.name}</td><td>${free} / ${z.cap}</td><td>${pct}%</td><td>${services.signLabel(st)}</td></tr>`;
   }).join('');
+  return `<table><thead><tr><th>Zone</th><th>Free</th><th>Full</th><th>Sign</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 function slotGridHtml(zone) {
   return `<div class="slotgrid">${zone.slots.map(s => {
@@ -470,7 +466,7 @@ function feedHtml(limit = 40) {
 function simCtlHtml() {
   return `<div class="sim-ctl">
     <button class="btn ghost sm" onclick="app.toggleSim()">${STATE.running ? 'Pause' : 'Resume'}</button>
-    <span class="pill ${STATE.running ? 'pulse' : ''}">${STATE.running ? 'running' : 'paused'}</span>
+    <span class="pill">${STATE.running ? 'running' : 'paused'}</span>
   </div>`;
 }
 
@@ -488,7 +484,7 @@ const views = {
       const left = el('div', 'card');
       left.innerHTML = `<h2>Live availability <span class="hint">updated a moment ago</span></h2>${zoneRowsHtml()}
         <div class="section-title" style="margin-top:14px">Zone A slots</div>${slotGridHtml(services.currentZones()[0])}
-        <div class="legend"><span><i class="s-green"></i>free</span><span><i style="background:#5c2a22"></i>occupied</span><span><i style="background:#4a3a6e"></i>reserved</span><span><i style="background:#3a4767"></i>unknown</span><span><i style="background:#2a3346"></i>out-of-service</span></div>`;
+        <p class="muted" style="font-size:12px">green = free, pink = taken, ? = unknown (sensor quiet)</p>`;
       grid.appendChild(left);
       // right: my session + entrance signage
       const right = el('div');
@@ -496,12 +492,7 @@ const views = {
       right.innerHTML = `
         <div class="card" style="margin-bottom:16px">
           <h2>Entrance sign</h2>
-          <div class="signage">
-            <div class="lot">${STATE.campuses[STATE.campus].label.toUpperCase()} PARKING</div>
-            <div class="big c-${st0}">${services.totalFree()}</div>
-            <div class="state c-${st0}">${services.signLabel(st0)}, ${services.totalFree()} SPACES</div>
-            <div class="dirs">Zone A    Zone B    Zone C</div>
-          </div>
+          <p>${STATE.campuses[STATE.campus].label} parking: <b>${services.totalFree()} spaces free</b> (${services.signLabel(st0)}).</p>
         </div>
         <div class="card">
           <h2>My parking</h2>
@@ -520,7 +511,7 @@ const views = {
       const g = el('div', 'grid cols-2');
       g.innerHTML = `
         <div class="card"><h2>Wallet</h2>
-          <div class="tile" style="margin:6px 0 12px"><div class="k">Balance</div><div class="v">${fmtVND(STATE.wallet)}</div></div>
+          <p>Balance: <b>${fmtVND(STATE.wallet)}</b></p>
           <button class="btn" onclick="app.topup()">Top up 50,000 đ</button>
           <div class="disclaimer">The top-up is stubbed here. A real parking payment through BKPay is future work.</div>
         </div>
@@ -557,12 +548,10 @@ const views = {
         <div style="margin-top:12px">${simCtlHtml()}</div>`;
       g.appendChild(left);
       const right = el('div', 'card');
-      right.innerHTML = `<h2>Alarms <span class="hint">${STATE.alarms.length} open</span></h2>
-        ${STATE.alarms.length ? STATE.alarms.map(a => `
-          <div class="alarm-item ${a.crit ? 'crit' : ''}">
-            <div class="ai-b"><div class="t">${a.type.replace('_', ' ')}</div><div class="d">${a.detail} at ${fmtTime(a.at)}</div></div>
-            <button class="btn sm" onclick="app.inspectAlarm(${a.id})">Inspect</button>
-          </div>`).join('') : '<p class="muted">No open alarms.</p>'}`;
+      right.innerHTML = `<h2>Alarms (${STATE.alarms.length})</h2>
+        ${STATE.alarms.length ? `<table><thead><tr><th>Type</th><th>Detail</th><th>Time</th><th></th></tr></thead><tbody>
+        ${STATE.alarms.map(a => `<tr><td>${a.type.replace('_', ' ')}</td><td>${a.detail}</td><td>${fmtTime(a.at)}</td><td><button class="btn sm" onclick="app.inspectAlarm(${a.id})">Inspect</button></td></tr>`).join('')}
+        </tbody></table>` : '<p class="muted">No open alarms.</p>'}`;
       g.appendChild(right);
       root.appendChild(g);
     } else {
@@ -615,7 +604,7 @@ const views = {
           { k: 'Refused (full)', v: STATE.stats.denied },
           { k: 'Theft alarms', v: `<span class="c-red">${STATE.stats.mismatch}</span>` }
         ])}
-        <div class="tile" style="margin-top:12px"><div class="k">Money collected</div><div class="v c-green">${fmtVND(STATE.stats.revenue)}</div></div></div>
+        <p style="margin-top:10px">Money collected: <b>${fmtVND(STATE.stats.revenue)}</b></p></div>
         <div class="card"><h2>Payment check</h2>
           ${STATE.reconBreaks.length ? `<p class="muted">${STATE.reconBreaks.length} payment(s) the bank did not confirm:</p>
           <table><thead><tr><th>Ref</th><th>Amount</th><th>Note</th></tr></thead><tbody>

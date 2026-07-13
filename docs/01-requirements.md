@@ -174,76 +174,55 @@ Most of the interesting edge cases live in these modules: a full lot, a broken s
 
 ## 6. Use-case diagram
 
-Members and visitors are both end users; a visitor session is opened by the operator. The outside systems are on the right.
+Members and visitors are both end users. A visitor session is opened by the operator. To keep it readable the diagram groups the use cases by the actor who starts them, and the outside systems (SSO, BKPay, sensors, camera, and so on) are drawn as one box on the right that the system talks to.
 
-```mermaid
-flowchart LR
-    member([Member Driver]):::actor
-    visitor([Visitor Driver]):::actor
-    operator([Parking Operator]):::actor
-    admin([System Administrator]):::actor
+<svg viewBox="0 0 760 560" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:720px;font-family:Arial,sans-serif;font-size:12px">
+  <!-- system boundary -->
+  <rect x="230" y="20" width="300" height="520" fill="none" stroke="#000"/>
+  <text x="380" y="40" text-anchor="middle" font-size="12">Smart Parking Management System</text>
 
-    sso[[HCMUT_SSO]]:::ext
-    datacore[[HCMUT_DATACORE]]:::ext
-    bkpay[[BKPay]]:::ext
-    sensor[[Slot Sensor]]:::ext
-    anpr[[Camera]]:::ext
-    signage[[Signs]]:::ext
-    barrier[[Barrier]]:::ext
+  <!-- use case ovals (slightly uneven sizes on purpose) -->
+  <ellipse cx="380" cy="80" rx="78" ry="21" fill="none" stroke="#000"/><text x="380" y="84" text-anchor="middle">Enter lot</text>
+  <ellipse cx="380" cy="135" rx="82" ry="22" fill="none" stroke="#000"/><text x="380" y="139" text-anchor="middle">Exit and pay</text>
+  <ellipse cx="380" cy="190" rx="76" ry="20" fill="none" stroke="#000"/><text x="380" y="194" text-anchor="middle">See free spaces</text>
+  <ellipse cx="380" cy="243" rx="80" ry="21" fill="none" stroke="#000"/><text x="380" y="247" text-anchor="middle">Manage account</text>
+  <ellipse cx="380" cy="300" rx="90" ry="22" fill="none" stroke="#000"/><text x="380" y="304" text-anchor="middle">Issue visitor ticket</text>
+  <ellipse cx="380" cy="355" rx="94" ry="22" fill="none" stroke="#000"/><text x="380" y="359" text-anchor="middle">Watch lot, alarms</text>
+  <ellipse cx="380" cy="408" rx="80" ry="20" fill="none" stroke="#000"/><text x="380" y="412" text-anchor="middle">Look up vehicle</text>
+  <ellipse cx="380" cy="462" rx="84" ry="21" fill="none" stroke="#000"/><text x="380" y="466" text-anchor="middle">Configure system</text>
+  <ellipse cx="380" cy="512" rx="60" ry="20" fill="none" stroke="#000"/><text x="380" y="516" text-anchor="middle">Reports</text>
 
-    subgraph SYS[Smart Parking Management System]
-        UC1((Log in via SSO))
-        UC2((Enter lot))
-        UC3((Exit and pay))
-        UC4((See free spaces))
-        UC5((Manage account and vehicles))
-        UC6((Top up balance))
-        UC7((Issue visitor ticket))
-        UC8((Watch lot and handle alarms))
-        UC9((Look up vehicle by plate))
-        UC10((Track slots))
-        UC11((Update the signs))
-        UC12((Configure fees, zones, devices))
-        UC13((Manage users and roles))
-        UC14((See reports and dashboards))
-        UC16((Take payment))
-    end
+  <!-- actors (stick figures) on the left -->
+  <g stroke="#000" fill="none">
+    <circle cx="70" cy="95" r="9"/><line x1="70" y1="104" x2="70" y2="128"/><line x1="55" y1="113" x2="85" y2="113"/><line x1="70" y1="128" x2="58" y2="146"/><line x1="70" y1="128" x2="82" y2="146"/>
+    <circle cx="70" cy="270" r="9"/><line x1="70" y1="279" x2="70" y2="303"/><line x1="55" y1="288" x2="85" y2="288"/><line x1="70" y1="303" x2="58" y2="321"/><line x1="70" y1="303" x2="82" y2="321"/>
+  </g>
+  <text x="70" y="165" text-anchor="middle">Member</text>
+  <text x="70" y="340" text-anchor="middle">Visitor</text>
+  <!-- actors on the right -->
+  <g stroke="#000" fill="none">
+    <circle cx="695" cy="360" r="9"/><line x1="695" y1="369" x2="695" y2="393"/><line x1="680" y1="378" x2="710" y2="378"/><line x1="695" y1="393" x2="683" y2="411"/><line x1="695" y1="393" x2="707" y2="411"/>
+    <circle cx="695" cy="470" r="9"/><line x1="695" y1="479" x2="695" y2="503"/><line x1="680" y1="488" x2="710" y2="488"/><line x1="695" y1="503" x2="683" y2="521"/><line x1="695" y1="503" x2="707" y2="521"/>
+  </g>
+  <text x="695" y="430" text-anchor="middle">Operator</text>
+  <text x="695" y="540" text-anchor="middle">Admin</text>
 
-    member --- UC1
-    member --- UC2
-    member --- UC3
-    member --- UC4
-    member --- UC5
-    member --- UC6
+  <!-- association lines (straight) -->
+  <g stroke="#000">
+    <line x1="80" y1="120" x2="302" y2="82"/>
+    <line x1="80" y1="120" x2="298" y2="135"/>
+    <line x1="80" y1="120" x2="304" y2="190"/>
+    <line x1="80" y1="120" x2="300" y2="243"/>
+    <line x1="80" y1="295" x2="298" y2="140"/>
+    <line x1="685" y1="360" x2="470" y2="300"/>
+    <line x1="685" y1="360" x2="474" y2="355"/>
+    <line x1="685" y1="380" x2="460" y2="408"/>
+    <line x1="685" y1="470" x2="464" y2="462"/>
+    <line x1="685" y1="480" x2="440" y2="512"/>
+  </g>
+</svg>
 
-    visitor --- UC2
-    visitor --- UC3
-    visitor --- UC4
-
-    operator --- UC7
-    operator --- UC8
-    operator --- UC9
-
-    admin --- UC12
-    admin --- UC13
-    admin --- UC14
-
-    UC1 --- sso
-    UC1 --- datacore
-    UC16 --- bkpay
-    UC3 --- UC16
-    UC2 --- anpr
-    UC3 --- anpr
-    UC2 --- barrier
-    UC3 --- barrier
-    UC10 --- sensor
-    UC11 --- signage
-
-    classDef actor fill:#e3f2fd,stroke:#1565c0,color:#0d47a1;
-    classDef ext fill:#fff3e0,stroke:#e65100,color:#bf360c;
-```
-
-Some relationships between the use cases: "Enter lot" includes checking the slot count and reading the plate. "Exit and pay" includes "Take payment", and the theft alarm on a plate mismatch is an extension of it. "Enter lot" extends into "Issue visitor ticket" when there is no member card. "Log in via SSO" is used by every member action.
+A few notes on the use cases. Entering the lot involves checking the free count and reading the plate. Exit and pay is where the fee is charged and where the theft alarm goes off if the plates do not match. When there is no member card, entering turns into the visitor ticket flow. Logging in through the SSO happens before any of the member actions.
 
 ## 7. Non-functional requirements
 
