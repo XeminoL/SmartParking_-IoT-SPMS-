@@ -18,14 +18,14 @@ On the login screen pick a role: driver, operator, or admin. The demo keeps runn
 
 ```
 docs/
-  01-requirements.md   context, stakeholders, requirements, use-case diagram
-  02-uml-and-ui.md     scenarios, sequence/activity/state diagrams, UI
-  03-design.md         architecture, deployment, class diagram, methods, tests
-  pdf/                 the three parts as PDF
+  01-requirements.md   
+  02-uml-and-ui.md     
+  03-design.md         
+  pdf/                 
 mvp/
-  index.html           the demo (UI and styles)
-  app.js               the state, the simulation, and the screens
-assets/                the screenshots above
+  index.html           
+  app.js               
+assets/                
 ```
 
 The Markdown files show fine on GitHub, diagrams included. The PDFs are the hand-in version.
