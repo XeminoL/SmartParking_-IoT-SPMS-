@@ -15,18 +15,18 @@ This builds on Submissions #1 and #2.
 
 ## 1. Architecture overview
 
-We split the system into a few services, each responsible for one part of the job, and put an API gateway in front of them. For the project we build it as one application with these parts kept as separate modules, rather than as truly separate deployed services, so that a small team can actually build and run it. If the system grew, the same boundaries would let us pull a module out into its own service later. The two we would split first are the sensor ingestion and the payment part, because those are the ones most likely to be noisy or to fail in ways we do not control.
+The system is split into a few services, each responsible for one part of the job, with an API gateway in front of them. For this project it is built as one application with these parts kept as separate modules, rather than as truly separate deployed services, so a small team can actually build and run it. If the system grew, the same boundaries would let a module be pulled out into its own service later. The two to split first are the sensor ingestion and the payment part, since those are the ones most likely to be noisy or to fail in uncontrolled ways.
 
-We grouped the modules by what they own and by how often they change, not just by which table they touch. The sensor and gate code changes when hardware changes, so we keep it apart. The pricing and payment code changes when the fees or the bank change, so that is apart too. The availability view is read a lot, so we keep its data separate and cache it.
+The modules are grouped by what they own and by how often they change, not just by which table they touch. The sensor and gate code changes when hardware changes, so it is kept apart. The pricing and payment code changes when the fees or the bank change, so that is apart too. The availability view is read a lot, so its data is kept separate and cached.
 
 Each of these choices lines up with a non-functional requirement from Submission #1:
 
-- We put the sensors behind an MQTT broker so a slow or offline sensor does not block the rest (NFR-REL-03).
+- The sensors sit behind an MQTT broker so a slow or offline sensor does not block the rest (NFR-REL-03).
 - The gate keeps a local cache and works offline (NFR-REL-02).
 - Calls out to SSO, DATACORE, and BKPay have a timeout and a fallback, so if one of them is down the rest keeps going (NFR-REL-01).
 - The free-count for the availability view is cached so reads are fast (NFR-PERF-02).
-- We keep an audit table of who did what (NFR-SEC-03).
-- We check the roles on every request and make sure a user can only see their own session (NFR-SEC-02).
+- An audit table records who did what (NFR-SEC-03).
+- Roles are checked on every request, and a user can only see their own session (NFR-SEC-02).
 
 ## 2. Components
 
@@ -65,20 +65,20 @@ Each of these choices lines up with a non-functional requirement from Submission
   <rect x="515" y="210" width="140" height="24" fill="#FEFECE" stroke="#A80036"/><text x="585" y="226" text-anchor="middle">HCMUT_DATACORE</text>
   <rect x="515" y="240" width="140" height="24" fill="#FEFECE" stroke="#A80036"/><text x="585" y="256" text-anchor="middle">BKPay</text>
 
-  <!-- arrows (main flows only) -->
+  <!-- arrows: stop cleanly at each box edge, no overshoot into the box -->
   <g stroke="#A80036" fill="none" marker-end="url(#ah)">
-    <line x1="90" y1="54" x2="130" y2="90"/>
-    <line x1="225" y1="54" x2="150" y2="90"/>
-    <line x1="365" y1="54" x2="365" y2="90"/>
-    <line x1="140" y1="120" x2="140" y2="150"/>
-    <line x1="365" y1="120" x2="370" y2="180"/>
-    <line x1="240" y1="350" x2="130" y2="360"/>
-    <line x1="240" y1="350" x2="215" y2="360"/>
-    <line x1="450" y1="210" x2="500" y2="210"/>
+    <line x1="90"  y1="54"  x2="120" y2="88"/>
+    <line x1="225" y1="54"  x2="158" y2="88"/>
+    <line x1="365" y1="54"  x2="365" y2="88"/>
+    <line x1="140" y1="120" x2="140" y2="148"/>
+    <line x1="365" y1="120" x2="370" y2="178"/>
+    <line x1="120" y1="352" x2="105" y2="358"/>
+    <line x1="230" y1="352" x2="222" y2="358"/>
+    <line x1="452" y1="215" x2="498" y2="215"/>
   </g>
   <defs>
-    <marker id="ah" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
-      <path d="M0,0 L7,3 L0,6" fill="none" stroke="#A80036"/>
+    <marker id="ah" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L8,3 L0,6" fill="none" stroke="#A80036"/>
     </marker>
   </defs>
 </svg>
@@ -86,13 +86,13 @@ Each of these choices lines up with a non-functional requirement from Submission
 What each module does:
 
 - API gateway: the single entry point. Handles HTTPS, routing, and checking the login token.
-- Login handler: does the SSO login and creates a local session. Keeping this in one place means we can fake the login in testing.
+- Login handler: does the SSO login and creates a local session. Keeping this in one place means the login can be faked in testing.
 - Access control (gate): decides entry and exit, matches the plate/card/QR to a session, and writes the entry/exit events.
 - Sensor ingestion: the only module that writes slot state. It reads the MQTT messages, drops duplicates, and updates the slots.
 - Availability: keeps the free-count per area, ready to read quickly, and feeds the signs and the app.
 - Billing: works out the fee for a session and makes the bill when the session closes.
 - Payment: talks to BKPay and records the payment.
-- DataCore reader: pulls student and vehicle data and caches it. We only read from DATACORE.
+- DataCore reader: pulls student and vehicle data and caches it. DATACORE is read-only.
 - Admin / config: manages zones, slots, sensors, price rules, and the device list.
 - Signs and notifications: sends updates to the signs and messages to users.
 - Audit log: keeps a record of entries, exits, payments, and admin actions.
@@ -128,17 +128,16 @@ What each module does:
   <rect x="435" y="330" width="200" height="24" fill="#FEFECE" stroke="#A80036"/><text x="535" y="346" text-anchor="middle">BKPay</text>
 
   <g stroke="#A80036" fill="none" marker-end="url(#ah2)">
-    <line x1="70" y1="79" x2="120" y2="130"/>
-    <line x1="170" y1="164" x2="170" y2="200"/>
-    <line x1="170" y1="230" x2="170" y2="270"/>
-    <line x1="130" y1="304" x2="110" y2="345"/>
-    <line x1="210" y1="304" x2="230" y2="345"/>
-    <line x1="280" y1="287" x2="420" y2="300"/>
-    <line x1="230" y1="79" x2="255" y2="270"/>
+    <line x1="70"  y1="79"  x2="110" y2="128"/>
+    <line x1="170" y1="164" x2="170" y2="198"/>
+    <line x1="170" y1="230" x2="170" y2="268"/>
+    <line x1="130" y1="304" x2="112" y2="343"/>
+    <line x1="210" y1="304" x2="228" y2="343"/>
+    <line x1="282" y1="287" x2="418" y2="300"/>
   </g>
   <defs>
-    <marker id="ah2" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
-      <path d="M0,0 L7,3 L0,6" fill="none" stroke="#A80036"/>
+    <marker id="ah2" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L8,3 L0,6" fill="none" stroke="#A80036"/>
     </marker>
   </defs>
 </svg>
@@ -277,12 +276,12 @@ The classes fall into three kinds. The entity classes are the ones above (User, 
 
 ## 5. Design patterns
 
-We used a few patterns where they fit:
+A few patterns are used where they fit:
 
 - Observer, for the sensor updates. The sensor ingestion is the source of "a slot changed" events, and the availability, signs, and access-control code react to them. In the prototype this is just a small event bus, and over MQTT it is the same idea (publish and subscribe).
 - State, for the session and the slot. Instead of a big if/else on a status field, the session moves between states (active, waiting for payment, held, closed) and only the allowed moves are possible. This is the same as the state diagrams in Submission #2.
 - Strategy, for the pricing. There is one interface that takes a session and returns an amount, and a class per pricing style (per hour, per day with a cap, free grace period, student rate, flat rate). Adding a new fee style means adding a class, not editing the billing code.
-- Adapter, for the outside systems. The SSO, DATACORE, and BKPay each sit behind a small adapter, so we can swap in a fake one for testing.
+- Adapter, for the outside systems. The SSO, DATACORE, and BKPay each sit behind a small adapter, so a fake one can be swapped in for testing.
 
 ```mermaid
 classDiagram
@@ -326,7 +325,7 @@ The service classes and their main methods.
 
 ### LoginHandler
 - buildLoginRedirect(serviceUrl): returns the SSO login URL to send the user to.
-- validateTicket(ticket, serviceUrl): checks the ticket on our server and returns the user identity, or an error if it is invalid.
+- validateTicket(ticket, serviceUrl): checks the ticket server-side and returns the user identity, or an error if it is invalid.
 - createSession(identity): creates the local user on first login if needed, fills in the profile from DATACORE, and issues a local session token.
 - logout(): ends the local session.
 
@@ -365,7 +364,7 @@ The service classes and their main methods.
 - assignRole(user, role): grants or removes a role and logs it.
 - pushSign(zone, state): sends the sign state to the signs.
 - append(actor, action): writes a row to the audit log with who did it and when.
-- reconcile(day): matches the payments we recorded against the bank report and flags any that do not match.
+- reconcile(day): matches the recorded payments against the bank report and flags any that do not match.
 
 ## 7. Test cases
 

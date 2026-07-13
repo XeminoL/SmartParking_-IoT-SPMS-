@@ -19,20 +19,20 @@ Project: Smart Parking System for University Campus, Ho Chi Minh City University
 
 HCMUT has two campuses (Lý Thường Kiệt in District 10 and Dĩ An in Bình Dương) and a large number of people who ride in every day: students, graduate students, lecturers, staff, and visitors. Parking is already managed with RFID cards that were rolled out around 2019, mostly for motorbikes and bicycles.
 
-The current setup has a few problems we noticed and that the brief also mentions:
+The current setup has a few problems, also noted in the brief:
 
 - Long queues at the gates in the morning, because almost everyone arrives in the short window before class starts.
 - Cards get lost or copied, and a card is not really tied to a specific vehicle.
 - Fees are still handled with cash and checked by the guard by hand.
 - There is no easy way to see how many spaces are free before you drive in.
 
-The system we are proposing, the IoT-based Smart Parking Management System (IoT-SPMS), tries to fix these. It logs each entry and exit against the rider's HCMUT account through the university SSO, uses sensors to know which slots are taken, shows how full each area is on signs at the gate, works out the fee and sends the payment request to BKPay, and gives the operators and admins a live view plus a record of everything for auditing.
+The proposed system, the IoT-based Smart Parking Management System (IoT-SPMS), addresses these. It logs each entry and exit against the rider's HCMUT account through the university SSO, uses sensors to know which slots are taken, shows how full each area is on signs at the gate, works out the fee and sends the payment request to BKPay, and gives the operators and admins a live view plus a record of everything for auditing.
 
 One thing that shaped almost every decision in this project: on a Vietnamese campus the parking is mostly motorbikes, not cars. Most students own a motorbike and very few own a car, so the main lane has to move a lot of motorbikes quickly, not park one car per bay like a Western car park. A slot is roughly 1m x 2m and there are a lot of them.
 
-Because of that, a normal barrier gate does not work well here. A barrier takes about 1.5 seconds to open and close, so one lane can only pass around 40 vehicles a minute, and during the morning rush there are far more people than that arriving. So for the motorbike lane we assume a barrier-free flow: a camera reads the plate and the rider taps the card while moving, and the plate is checked again on the way out. Barriers are only used for the smaller car lot.
+Because of that, a normal barrier gate does not work well here. A barrier takes about 1.5 seconds to open and close, so one lane can only pass around 40 vehicles a minute, and during the morning rush there are far more people than that arriving. So the motorbike lane uses a barrier-free flow: a camera reads the plate and the rider taps the card while moving, and the plate is checked again on the way out. Barriers are only used for the smaller car lot.
 
-This also gives us a way to handle bike theft, which is a real concern here. When someone enters, we store the card, the plate read by the camera, a photo, and the time. When they leave, we read the plate again for the same card. If the plate does not match the one from entry, we treat it as a possible theft and raise an alarm. This "plate tied to card" idea is one of the more important parts of the design and it shows up in the requirements below.
+This also handles bike theft, a real concern here. On entry the system stores the card, the plate read by the camera, a photo, and the time. On exit it reads the plate again for the same card. If the plate does not match the one from entry, it is treated as a possible theft and an alarm is raised. This "plate tied to card" idea is one of the more important parts of the design and shows up in the requirements below.
 
 ## 2. Stakeholders
 
@@ -49,7 +49,7 @@ The people and groups who care about this system:
 
 ## 3. Objectives and scope
 
-What we want the system to do:
+What the system should do:
 
 - O1. Record entry and exit automatically, for members through their SSO account and for visitors through a temporary ticket, without needing the login server to be reachable at the exact moment they pass the gate.
 - O2. Keep a close-to-live count of free spaces that still works when a sensor or the network drops out.
@@ -60,17 +60,17 @@ What we want the system to do:
 
 In scope: entry/exit, slot tracking, signage, the availability view, sessions and billing, payment through BKPay or cash, visitor tickets, SSO login, reading student data from DATACORE, roles, admin configuration, dashboards and reports, and the audit log.
 
-Out of scope: buying and installing the actual sensors and barriers; building HCMUT_SSO, DATACORE, or BKPay themselves (we treat them as systems that already exist); towing wrongly parked vehicles; anything outside the campus.
+Out of scope: buying and installing the actual sensors and barriers; building HCMUT_SSO, DATACORE, or BKPay themselves (they are treated as systems that already exist); towing wrongly parked vehicles; anything outside the campus.
 
-A few scope choices we made for the demo:
+A few scope choices for the demo:
 
-- Reservation (letting someone book a slot ahead) is optional. We list the requirements but treat it as a bonus.
-- BKPay is designed in but stubbed in the prototype. The real BKPay is a web-only portal tied to one bank and it does not expose an API we could call for parking, so we mock it and note a real integration as future work.
+- Reservation (letting someone book a slot ahead) is optional. The requirements are listed but treated as a bonus.
+- BKPay is designed in but stubbed in the prototype. The real BKPay is a web-only portal tied to one bank and exposes no API for parking, so it is mocked here and a real integration is left as future work.
 - The prototype shows one lot, but the data model is built so more lots and more gates can be added later.
 
 ## 4. Actors
 
-We separate two things that are easy to mix up. One is the role in the app (what screens and actions you get), which is a permissions question. The other, only for end users, is whether you are a student, lecturer, staff, or visitor, which mainly changes the price you pay. We keep that as an attribute on the user, not as a separate login role.
+Two things that are easy to mix up are kept separate. One is the role in the app (which screens and actions are available), a permissions question. The other, only for end users, is whether the person is a student, lecturer, staff, or visitor, which mainly changes the price. That is kept as an attribute on the user, not as a separate login role.
 
 People who use the system directly:
 
@@ -92,7 +92,7 @@ Outside systems that also take part in the use cases:
 
 ## 5. Functional requirements
 
-We grouped the requirements into seven modules. Each one is written as "the system shall ..." and has an ID so we can point to it later. Priority is M (must have), S (should have), or C (could have).
+The requirements are grouped into seven modules. Each one is written as "the system shall ..." and has an ID for later reference. Priority is M (must have), S (should have), or C (could have).
 
 ### A. Entry and access control
 
@@ -126,7 +126,7 @@ We grouped the requirements into seven modules. Each one is written as "the syst
 | FR-SIG-01 | M | The system shall work out a state for each area from the free count and thresholds the admin sets. |
 | FR-SIG-02 | M | The system shall show the lot state on the entrance sign (spaces left, nearly full, or full). |
 | FR-SIG-03 | S | The system shall point drivers toward an area that still has room, and toward the nearest non-full area when their area is full. |
-| FR-SIG-04 | M | The admin shall be able to set the percentages that decide each sign state. We use green below 75%, yellow up to 90%, then full. |
+| FR-SIG-04 | M | The admin shall be able to set the percentages that decide each sign state. Default: green below 75%, yellow up to 90%, then full. |
 | FR-SIG-05 | M | The system shall show the current availability in a web/mobile view with the time it was last updated. |
 
 ### D. Exit and billing
@@ -226,7 +226,7 @@ A few notes on the use cases. Entering the lot involves checking the free count 
 
 ## 7. Non-functional requirements
 
-We grouped these by the quality types in ISO/IEC 25010. The numbers are targets we would test against, not measurements we have already taken. For this project the ones that matter most are staying up when the network drops, coping with a broken sensor, keeping the gate and signs fast, and keeping card and payment data safe.
+These are grouped by the quality types in ISO/IEC 25010. The numbers are targets to test against, not measurements already taken. The ones that matter most for this project are staying up when the network drops, coping with a broken sensor, keeping the gate and signs fast, and keeping card and payment data safe.
 
 | ID | Quality | Requirement | Target | Check |
 |---|---|---|---|---|
@@ -248,20 +248,20 @@ We grouped these by the quality types in ISO/IEC 25010. The numbers are targets 
 
 ## 8. Assumptions and open questions
 
-Things we assumed, and would confirm with the university if this were real:
+Assumptions, to be confirmed with the university in a real deployment:
 
-- We treat HCMUT_SSO as a CAS server (the login page says it runs Apereo CAS), so we log in by redirecting to it, getting a ticket back, and validating that ticket on our server. If the graders would rather we model it as a generic OAuth/OIDC provider, that is a small change.
-- DATACORE is read-only. We create the local user on first login from what the SSO gives us and fill in the rest from DATACORE, treating our copy as a cache. We never write back to DATACORE.
-- BKPay does not give us an API we can call for parking, so we stub it. We designed the flow the way the common Vietnamese gateways work (redirect to pay, then a server-to-server callback tells us it succeeded), and left a real BKPay hookup as future work.
+- HCMUT_SSO is treated as a CAS server (the login page reports Apereo CAS): login redirects to it, a ticket comes back, and that ticket is validated server-side. Modelling it instead as a generic OAuth/OIDC provider would be a small change.
+- DATACORE is read-only. The local user is created on first login from what the SSO returns, then filled in from DATACORE, with the local copy treated as a cache. Nothing is ever written back to DATACORE.
+- BKPay exposes no API for parking, so it is stubbed. The flow follows the common Vietnamese-gateway shape (redirect to pay, then a server-to-server callback confirms success); a real BKPay hookup is future work.
 - The main vehicle is the motorbike and the main lane is barrier-free. Barriers are only for the car lot.
-- We count occupancy by adding one on entry and subtracting one on exit, and reset at night to fix drift.
+- Occupancy is counted by adding one on entry and subtracting one on exit, with a nightly reset to fix drift.
 
-Open questions we could not answer on our own:
+Open questions for the stakeholders:
 
-- Which fields does the SSO actually return to a service like ours (name, email, and importantly whether the person is a student, lecturer, or staff)? That decides how much we need from DATACORE.
-- Does DATACORE give us a query API or only a nightly export? Does it hold the vehicle/plate registration?
-- Is there any BKPay path for small payments, or do we have to use the "service fee" channel? Would a prepaid wallet be acceptable to finance?
-- Would the university register our app as a CAS service and give it a service URL?
+- Which fields does the SSO return to a service like this one (name, email, and importantly whether the person is a student, lecturer, or staff)? That decides how much is needed from DATACORE.
+- Does DATACORE offer a query API or only a nightly export? Does it hold the vehicle/plate registration?
+- Is there any BKPay path for small payments, or must the "service fee" channel be used? Would a prepaid wallet be acceptable to finance?
+- Will the university register the app as a CAS service and give it a service URL?
 
 ## 9. Glossary
 
@@ -272,5 +272,5 @@ Open questions we could not answer on our own:
 - DATACORE: the read-only source of student and vehicle data.
 - Role: what a user can do in the app (end user, operator, admin).
 - MQTT: the lightweight messaging the sensors use to send updates to the backend.
-- Session: one park, from entry to exit. This is what we bill.
-- Unknown slot: a slot whose sensor has not reported for too long, so we do not trust its state.
+- Session: one park, from entry to exit. This is the unit of billing.
+- Unknown slot: a slot whose sensor has not reported for too long, so its state is not trusted.

@@ -13,7 +13,7 @@ This builds on the requirements in Submission #1.
 
 ## 1. Use-case scenarios
 
-We wrote out the main flows for the use cases in the diagram. The IDs (FR-...) point back to the requirements in Submission #1.
+The main flows for the use cases in the diagram are written out below. The IDs (FR-...) point back to the requirements in Submission #1.
 
 ### UC-02: Member enters (motorbike lane)
 
@@ -35,7 +35,7 @@ What can go wrong:
 - Card invalid or blacklisted: refuse, log the reason, show it, stop.
 - Area full: send the driver to another area; if the whole lot is full, show full and refuse.
 - No card at all: switch to the visitor flow (UC-02b).
-- Plate does not match the member's registered plate: let them in but flag it, so we can check at exit.
+- Plate does not match the member's registered plate: let them in but flag it for a check at exit.
 - Network down: the gate decides from its local cache and queues the event to sync later.
 
 ### UC-02b: Visitor enters
@@ -427,4 +427,4 @@ It turns to "nearly full" at 90% and "full" at 100%.
 +------------------------------------------------------------------+
 ```
 
-A few things we kept in mind for the UI. The driver screen is kept simple; the operator board is denser because they need more on one screen. We show the last-updated time on each screen so stale data is not mistaken for live. The colors mean the same thing everywhere, and we added an "unknown" state so a broken sensor does not look like a free slot. The exit screen shows the plate-check result on purpose since that is the anti-theft part. And it is all built around motorbikes and Vietnamese plates because that is what it is here.
+A few principles behind the UI. The driver screen is kept simple; the operator board is denser because an operator needs more on one screen. Each screen shows the last-updated time so stale data is not mistaken for live. The colors mean the same thing everywhere, and there is an "unknown" state so a broken sensor does not look like a free slot. The exit screen shows the plate-check result on purpose, since that is the anti-theft part. And it is all built around motorbikes and Vietnamese plates, because that is the reality here.

@@ -28,17 +28,17 @@ mvp/
 assets/                the screenshots above
 ```
 
-The Markdown files show fine on GitHub, diagrams included. The PDFs are the version we hand in.
+The Markdown files show fine on GitHub, diagrams included. The PDFs are the hand-in version.
 
 ## Main design choices
 
 These are the decisions the rest follows from:
 
 - The main lane is barrier-free. A barrier is too slow for the morning rush, so a camera reads the plate and the rider taps the card while moving. Barriers are only for the smaller car lot.
-- A plate is tied to the card. We store the plate at entry and read it again at exit. If it does not match, we treat it as a possible theft and raise an alarm.
+- A plate is tied to the card. The plate is stored at entry and read again at exit. A mismatch is treated as a possible theft and raises an alarm.
 - The free count stays close to live and copes with faults. Sensors send changes over MQTT, and a sensor that goes quiet is marked unknown and not counted as free.
-- Login goes through HCMUT_SSO, which is a CAS server (we assumed this from the login page), and student data is read from DATACORE without writing back.
-- BKPay is stubbed. The real one is a web portal with no API we could use for parking, so we mock it and note a real hookup as future work.
+- Login goes through HCMUT_SSO, which is a CAS server (assumed from the login page), and student data is read from DATACORE without writing back.
+- BKPay is stubbed. The real one is a web portal with no API for parking, so it is mocked and a real hookup is noted as future work.
 - The backend is one app with the parts kept separate, which a small team can build but which could be split later.
 
 ## How it is built
@@ -47,4 +47,4 @@ Plain HTML, CSS, and JavaScript, no libraries, with the data written into the co
 
 ## AI use
 
-See [`AI-USAGE.md`](AI-USAGE.md) for how we used AI on this.
+See [`AI-USAGE.md`](AI-USAGE.md) for how AI was used on this.
