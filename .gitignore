@@ -1,0 +1,17 @@
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+
+# Build / temp
+node_modules/
+*.log
+*.tmp
+~$*
+
+# Local scratch
+scratch/
