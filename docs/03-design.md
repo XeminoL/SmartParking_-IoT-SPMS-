@@ -32,41 +32,41 @@ Each of these choices lines up with a non-functional requirement from Submission
 
 <svg viewBox="0 0 700 470" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:680px;font-family:Arial,sans-serif;font-size:11px">
   <!-- clients row -->
-  <rect x="30" y="20" width="120" height="34" fill="none" stroke="#000"/><text x="90" y="41" text-anchor="middle">Mobile / web app</text>
-  <rect x="170" y="20" width="110" height="34" fill="none" stroke="#000"/><text x="225" y="41" text-anchor="middle">Admin / operator</text>
-  <rect x="300" y="20" width="130" height="34" fill="none" stroke="#000"/><text x="365" y="41" text-anchor="middle">Sensors and signs</text>
+  <rect x="30" y="20" width="120" height="34" fill="#FEFECE" stroke="#A80036"/><text x="90" y="41" text-anchor="middle">Mobile / web app</text>
+  <rect x="170" y="20" width="110" height="34" fill="#FEFECE" stroke="#A80036"/><text x="225" y="41" text-anchor="middle">Admin / operator</text>
+  <rect x="300" y="20" width="130" height="34" fill="#FEFECE" stroke="#A80036"/><text x="365" y="41" text-anchor="middle">Sensors and signs</text>
 
   <!-- gateway + broker -->
-  <rect x="60" y="90" width="160" height="30" fill="none" stroke="#000"/><text x="140" y="110" text-anchor="middle">API gateway</text>
-  <rect x="300" y="90" width="130" height="30" fill="none" stroke="#000"/><text x="365" y="110" text-anchor="middle">MQTT broker</text>
+  <rect x="60" y="90" width="160" height="30" fill="#FEFECE" stroke="#A80036"/><text x="140" y="110" text-anchor="middle">API gateway</text>
+  <rect x="300" y="90" width="130" height="30" fill="#FEFECE" stroke="#A80036"/><text x="365" y="110" text-anchor="middle">MQTT broker</text>
 
   <!-- backend box -->
-  <rect x="30" y="150" width="420" height="200" fill="none" stroke="#000"/>
+  <rect x="30" y="150" width="420" height="200" fill="#FEFECE" stroke="#A80036"/>
   <text x="40" y="168" font-size="11">Backend</text>
-  <rect x="45" y="180" width="120" height="26" fill="none" stroke="#000"/><text x="105" y="197" text-anchor="middle">Login handler</text>
-  <rect x="175" y="180" width="120" height="26" fill="none" stroke="#000"/><text x="235" y="197" text-anchor="middle">Access control</text>
-  <rect x="305" y="180" width="130" height="26" fill="none" stroke="#000"/><text x="370" y="197" text-anchor="middle">Sensor ingestion</text>
-  <rect x="45" y="216" width="120" height="26" fill="none" stroke="#000"/><text x="105" y="233" text-anchor="middle">Availability</text>
-  <rect x="175" y="216" width="120" height="26" fill="none" stroke="#000"/><text x="235" y="233" text-anchor="middle">Billing</text>
-  <rect x="305" y="216" width="130" height="26" fill="none" stroke="#000"/><text x="370" y="233" text-anchor="middle">Payment</text>
-  <rect x="45" y="252" width="120" height="26" fill="none" stroke="#000"/><text x="105" y="269" text-anchor="middle">DataCore reader</text>
-  <rect x="175" y="252" width="120" height="26" fill="none" stroke="#000"/><text x="235" y="269" text-anchor="middle">Admin / config</text>
-  <rect x="305" y="252" width="130" height="26" fill="none" stroke="#000"/><text x="370" y="269" text-anchor="middle">Signs / notify</text>
-  <rect x="110" y="300" width="120" height="26" fill="none" stroke="#000"/><text x="170" y="317" text-anchor="middle">Audit log</text>
+  <rect x="45" y="180" width="120" height="26" fill="#FEFECE" stroke="#A80036"/><text x="105" y="197" text-anchor="middle">Login handler</text>
+  <rect x="175" y="180" width="120" height="26" fill="#FEFECE" stroke="#A80036"/><text x="235" y="197" text-anchor="middle">Access control</text>
+  <rect x="305" y="180" width="130" height="26" fill="#FEFECE" stroke="#A80036"/><text x="370" y="197" text-anchor="middle">Sensor ingestion</text>
+  <rect x="45" y="216" width="120" height="26" fill="#FEFECE" stroke="#A80036"/><text x="105" y="233" text-anchor="middle">Availability</text>
+  <rect x="175" y="216" width="120" height="26" fill="#FEFECE" stroke="#A80036"/><text x="235" y="233" text-anchor="middle">Billing</text>
+  <rect x="305" y="216" width="130" height="26" fill="#FEFECE" stroke="#A80036"/><text x="370" y="233" text-anchor="middle">Payment</text>
+  <rect x="45" y="252" width="120" height="26" fill="#FEFECE" stroke="#A80036"/><text x="105" y="269" text-anchor="middle">DataCore reader</text>
+  <rect x="175" y="252" width="120" height="26" fill="#FEFECE" stroke="#A80036"/><text x="235" y="269" text-anchor="middle">Admin / config</text>
+  <rect x="305" y="252" width="130" height="26" fill="#FEFECE" stroke="#A80036"/><text x="370" y="269" text-anchor="middle">Signs / notify</text>
+  <rect x="110" y="300" width="120" height="26" fill="#FEFECE" stroke="#A80036"/><text x="170" y="317" text-anchor="middle">Audit log</text>
 
   <!-- data -->
-  <rect x="45" y="360" width="110" height="28" fill="none" stroke="#000"/><text x="100" y="378" text-anchor="middle">Database</text>
-  <rect x="175" y="360" width="90" height="28" fill="none" stroke="#000"/><text x="220" y="378" text-anchor="middle">Cache</text>
+  <rect x="45" y="360" width="110" height="28" fill="#FEFECE" stroke="#A80036"/><text x="100" y="378" text-anchor="middle">Database</text>
+  <rect x="175" y="360" width="90" height="28" fill="#FEFECE" stroke="#A80036"/><text x="220" y="378" text-anchor="middle">Cache</text>
 
   <!-- external column -->
-  <rect x="500" y="150" width="170" height="120" fill="none" stroke="#000"/>
+  <rect x="500" y="150" width="170" height="120" fill="#FEFECE" stroke="#A80036"/>
   <text x="510" y="168" font-size="11">Outside systems</text>
-  <rect x="515" y="180" width="140" height="24" fill="none" stroke="#000"/><text x="585" y="196" text-anchor="middle">HCMUT_SSO</text>
-  <rect x="515" y="210" width="140" height="24" fill="none" stroke="#000"/><text x="585" y="226" text-anchor="middle">HCMUT_DATACORE</text>
-  <rect x="515" y="240" width="140" height="24" fill="none" stroke="#000"/><text x="585" y="256" text-anchor="middle">BKPay</text>
+  <rect x="515" y="180" width="140" height="24" fill="#FEFECE" stroke="#A80036"/><text x="585" y="196" text-anchor="middle">HCMUT_SSO</text>
+  <rect x="515" y="210" width="140" height="24" fill="#FEFECE" stroke="#A80036"/><text x="585" y="226" text-anchor="middle">HCMUT_DATACORE</text>
+  <rect x="515" y="240" width="140" height="24" fill="#FEFECE" stroke="#A80036"/><text x="585" y="256" text-anchor="middle">BKPay</text>
 
   <!-- arrows (main flows only) -->
-  <g stroke="#000" fill="none" marker-end="url(#ah)">
+  <g stroke="#A80036" fill="none" marker-end="url(#ah)">
     <line x1="90" y1="54" x2="130" y2="90"/>
     <line x1="225" y1="54" x2="150" y2="90"/>
     <line x1="365" y1="54" x2="365" y2="90"/>
@@ -78,7 +78,7 @@ Each of these choices lines up with a non-functional requirement from Submission
   </g>
   <defs>
     <marker id="ah" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
-      <path d="M0,0 L7,3 L0,6" fill="none" stroke="#000"/>
+      <path d="M0,0 L7,3 L0,6" fill="none" stroke="#A80036"/>
     </marker>
   </defs>
 </svg>
@@ -101,33 +101,33 @@ What each module does:
 
 <svg viewBox="0 0 680 430" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:640px;font-family:Arial,sans-serif;font-size:11px">
   <!-- field devices -->
-  <rect x="20" y="20" width="300" height="70" fill="none" stroke="#000"/>
+  <rect x="20" y="20" width="300" height="70" fill="#FEFECE" stroke="#A80036"/>
   <text x="30" y="37" font-size="11">At the lot</text>
-  <rect x="30" y="45" width="80" height="34" fill="none" stroke="#000"/><text x="70" y="65" text-anchor="middle">Sensors</text>
-  <rect x="120" y="45" width="110" height="34" fill="none" stroke="#000"/><text x="175" y="60" text-anchor="middle">Gate: barrier,</text><text x="175" y="72" text-anchor="middle">reader, camera</text>
-  <rect x="240" y="45" width="70" height="34" fill="none" stroke="#000"/><text x="275" y="65" text-anchor="middle">Signs</text>
+  <rect x="30" y="45" width="80" height="34" fill="#FEFECE" stroke="#A80036"/><text x="70" y="65" text-anchor="middle">Sensors</text>
+  <rect x="120" y="45" width="110" height="34" fill="#FEFECE" stroke="#A80036"/><text x="175" y="60" text-anchor="middle">Gate: barrier,</text><text x="175" y="72" text-anchor="middle">reader, camera</text>
+  <rect x="240" y="45" width="70" height="34" fill="#FEFECE" stroke="#A80036"/><text x="275" y="65" text-anchor="middle">Signs</text>
 
   <!-- gateway -->
-  <rect x="60" y="130" width="220" height="34" fill="none" stroke="#000"/><text x="170" y="151" text-anchor="middle">Gateway (buffers if network drops)</text>
+  <rect x="60" y="130" width="220" height="34" fill="#FEFECE" stroke="#A80036"/><text x="170" y="151" text-anchor="middle">Gateway (buffers if network drops)</text>
 
   <!-- broker -->
-  <rect x="90" y="200" width="160" height="30" fill="none" stroke="#000"/><text x="170" y="220" text-anchor="middle">MQTT broker</text>
+  <rect x="90" y="200" width="160" height="30" fill="#FEFECE" stroke="#A80036"/><text x="170" y="220" text-anchor="middle">MQTT broker</text>
 
   <!-- backend -->
-  <rect x="60" y="270" width="220" height="34" fill="none" stroke="#000"/><text x="170" y="291" text-anchor="middle">Backend server (the services)</text>
+  <rect x="60" y="270" width="220" height="34" fill="#FEFECE" stroke="#A80036"/><text x="170" y="291" text-anchor="middle">Backend server (the services)</text>
 
   <!-- data -->
-  <rect x="60" y="345" width="100" height="30" fill="none" stroke="#000"/><text x="110" y="365" text-anchor="middle">Database</text>
-  <rect x="180" y="345" width="100" height="30" fill="none" stroke="#000"/><text x="230" y="365" text-anchor="middle">Cache</text>
+  <rect x="60" y="345" width="100" height="30" fill="#FEFECE" stroke="#A80036"/><text x="110" y="365" text-anchor="middle">Database</text>
+  <rect x="180" y="345" width="100" height="30" fill="#FEFECE" stroke="#A80036"/><text x="230" y="365" text-anchor="middle">Cache</text>
 
   <!-- external -->
-  <rect x="420" y="240" width="230" height="120" fill="none" stroke="#000"/>
+  <rect x="420" y="240" width="230" height="120" fill="#FEFECE" stroke="#A80036"/>
   <text x="430" y="258" font-size="11">Outside systems</text>
-  <rect x="435" y="270" width="200" height="24" fill="none" stroke="#000"/><text x="535" y="286" text-anchor="middle">HCMUT_SSO</text>
-  <rect x="435" y="300" width="200" height="24" fill="none" stroke="#000"/><text x="535" y="316" text-anchor="middle">HCMUT_DATACORE</text>
-  <rect x="435" y="330" width="200" height="24" fill="none" stroke="#000"/><text x="535" y="346" text-anchor="middle">BKPay</text>
+  <rect x="435" y="270" width="200" height="24" fill="#FEFECE" stroke="#A80036"/><text x="535" y="286" text-anchor="middle">HCMUT_SSO</text>
+  <rect x="435" y="300" width="200" height="24" fill="#FEFECE" stroke="#A80036"/><text x="535" y="316" text-anchor="middle">HCMUT_DATACORE</text>
+  <rect x="435" y="330" width="200" height="24" fill="#FEFECE" stroke="#A80036"/><text x="535" y="346" text-anchor="middle">BKPay</text>
 
-  <g stroke="#000" fill="none" marker-end="url(#ah2)">
+  <g stroke="#A80036" fill="none" marker-end="url(#ah2)">
     <line x1="70" y1="79" x2="120" y2="130"/>
     <line x1="170" y1="164" x2="170" y2="200"/>
     <line x1="170" y1="230" x2="170" y2="270"/>
@@ -138,7 +138,7 @@ What each module does:
   </g>
   <defs>
     <marker id="ah2" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
-      <path d="M0,0 L7,3 L0,6" fill="none" stroke="#000"/>
+      <path d="M0,0 L7,3 L0,6" fill="none" stroke="#A80036"/>
     </marker>
   </defs>
 </svg>

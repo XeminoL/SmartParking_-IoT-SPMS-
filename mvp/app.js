@@ -112,8 +112,8 @@ const services = {
     if (pct >= CONFIG.greenBelow) return 'yellow';
     return 'green';
   },
-  signLabel(st) { return { green: 'Available', yellow: 'Filling', orange: 'Nearly full', red: 'Full' }[st]; },
-  stClass(st) { return { green: 'st-good', yellow: 'st-warn', orange: 'st-serious', red: 'st-crit' }[st]; },
+  signLabel(st) { return { green: 'AVAILABLE', yellow: 'FILLING', orange: 'NEARLY_FULL', red: 'FULL' }[st]; },
+  stClass(st) { return { green: 'ok', yellow: 'warn', orange: 'serious', red: 'full' }[st]; },
   currentZones() { return STATE.campuses[STATE.campus].zones; },
   nearestFreeZone(fromName) {
     const z = this.currentZones().filter(z => z.name !== fromName && this.zoneFree(z) > 0)
@@ -447,7 +447,7 @@ function zoneRowsHtml() {
   const rows = services.currentZones().map(z => {
     const free = services.zoneFree(z), pct = services.zoneOccPct(z), st = services.signState(pct);
     return `<tr><td>Zone ${z.name}</td><td>${free} / ${z.cap}</td><td>${pct}%</td>
-      <td><span class="st ${services.stClass(st)}"><span class="d"></span>${services.signLabel(st)}</span></td></tr>`;
+      <td><span class="tag ${services.stClass(st)}">${services.signLabel(st)}</span></td></tr>`;
   }).join('');
   return `<table><thead><tr><th>Zone</th><th>Free</th><th>Full</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
@@ -591,7 +591,7 @@ const views = {
         const st = services.signState(services.zoneOccPct(z));
         const card = el('div', 'card');
         card.style.marginTop = '14px';
-        card.innerHTML = `<h2>Zone ${z.name} <span class="hint">${z.vehicle}, ${z.cap} slots &middot; <span class="st ${services.stClass(st)}"><span class="d"></span>${services.signLabel(st)}</span></span></h2>${slotGridHtml(z)}`;
+        card.innerHTML = `<h2>Zone ${z.name} <span class="hint">${z.vehicle} &middot; ${z.cap} slots &middot; <span class="tag ${services.stClass(st)}">${services.signLabel(st)}</span></span></h2>${slotGridHtml(z)}`;
         root.appendChild(card);
       });
       root.appendChild(el('div', 'card', `<div style="display:flex;gap:8px"><button class="btn ghost" onclick="app.toggleSlotOOS()">Set a free Zone A slot out of service</button></div><div class="disclaimer">In the demo, sensors go quiet at random. That slot then shows as unknown and is not counted as free.</div>`));
