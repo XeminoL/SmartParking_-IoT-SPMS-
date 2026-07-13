@@ -112,7 +112,8 @@ const services = {
     if (pct >= CONFIG.greenBelow) return 'yellow';
     return 'green';
   },
-  signLabel(st) { return { green: 'AVAILABLE', yellow: 'FILLING', orange: 'NEARLY FULL', red: 'FULL' }[st]; },
+  signLabel(st) { return { green: 'Available', yellow: 'Filling', orange: 'Nearly full', red: 'Full' }[st]; },
+  stClass(st) { return { green: 'st-good', yellow: 'st-warn', orange: 'st-serious', red: 'st-crit' }[st]; },
   currentZones() { return STATE.campuses[STATE.campus].zones; },
   nearestFreeZone(fromName) {
     const z = this.currentZones().filter(z => z.name !== fromName && this.zoneFree(z) > 0)
@@ -440,16 +441,15 @@ const app = {
 
 /* -------- shared render bits -------- */
 function tilesHtml(tiles) {
-  // plain list, not a KPI-tile row
-  return `<ul style="margin:4px 0 4px 20px">${tiles.map(t => `<li>${t.k}: <b>${t.v}</b></li>`).join('')}</ul>`;
+  return `<div class="summary">${tiles.map(t => `<div class="s${t.alarm ? ' alarm' : ''}"><div class="n">${t.v}</div><div class="l">${t.k}</div></div>`).join('')}</div>`;
 }
 function zoneRowsHtml() {
-  // plain table of zones with the sign state as text
   const rows = services.currentZones().map(z => {
     const free = services.zoneFree(z), pct = services.zoneOccPct(z), st = services.signState(pct);
-    return `<tr><td>Zone ${z.name}</td><td>${free} / ${z.cap}</td><td>${pct}%</td><td>${services.signLabel(st)}</td></tr>`;
+    return `<tr><td>Zone ${z.name}</td><td>${free} / ${z.cap}</td><td>${pct}%</td>
+      <td><span class="st ${services.stClass(st)}"><span class="d"></span>${services.signLabel(st)}</span></td></tr>`;
   }).join('');
-  return `<table><thead><tr><th>Zone</th><th>Free</th><th>Full</th><th>Sign</th></tr></thead><tbody>${rows}</tbody></table>`;
+  return `<table><thead><tr><th>Zone</th><th>Free</th><th>Full</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 function slotGridHtml(zone) {
   return `<div class="slotgrid">${zone.slots.map(s => {
@@ -464,9 +464,8 @@ function feedHtml(limit = 40) {
   ).join('') || '<p class="muted">Nothing yet.</p>'}</div>`;
 }
 function simCtlHtml() {
-  return `<div class="sim-ctl">
-    <button class="btn ghost sm" onclick="app.toggleSim()">${STATE.running ? 'Pause' : 'Resume'}</button>
-    <span class="pill">${STATE.running ? 'running' : 'paused'}</span>
+  return `<div class="sim-ctl"><span class="muted" style="font-size:12px">Simulation ${STATE.running ? 'running' : 'paused'}</span>
+    <button class="btn ghost sm" onclick="app.toggleSim()" style="color:var(--ink);border-color:var(--line2)">${STATE.running ? 'Pause' : 'Resume'}</button>
   </div>`;
 }
 
@@ -484,7 +483,7 @@ const views = {
       const left = el('div', 'card');
       left.innerHTML = `<h2>Live availability <span class="hint">updated a moment ago</span></h2>${zoneRowsHtml()}
         <div class="section-title" style="margin-top:14px">Zone A slots</div>${slotGridHtml(services.currentZones()[0])}
-        <p class="muted" style="font-size:12px">green = free, pink = taken, ? = unknown (sensor quiet)</p>`;
+        <p class="legend">green = free, grey = taken, ? = unknown (sensor quiet)</p>`;
       grid.appendChild(left);
       // right: my session + entrance signage
       const right = el('div');
@@ -506,7 +505,8 @@ const views = {
         </div>`;
       grid.appendChild(right);
       root.appendChild(grid);
-      root.appendChild(el('div', 'card', simCtlHtml()));
+      const ctl = el('div', '', simCtlHtml()); ctl.style.marginTop = '4px';
+      root.appendChild(ctl);
     } else {
       const g = el('div', 'grid cols-2');
       g.innerHTML = `
@@ -535,7 +535,7 @@ const views = {
       { k: 'Free / total', v: `${services.totalFree()}<small>/${services.totalCap()}</small>` },
       { k: 'Open sessions', v: activeCount },
       { k: 'Visitors in lot', v: visitors },
-      { k: 'Open alarms', v: `<span class="${STATE.alarms.length ? 'c-red' : ''}">${STATE.alarms.length}</span>` }
+      { k: 'Open alarms', v: STATE.alarms.length, alarm: STATE.alarms.length > 0 }
     ])));
 
     if (app.tab.operator === 'board') {
@@ -584,14 +584,14 @@ const views = {
       root.appendChild(el('div', 'card', tilesHtml([
         { k: 'Zones', v: services.currentZones().length },
         { k: 'Total slots', v: services.totalCap() },
-        { k: 'Unknown', v: `<span class="c-orange">${sim.currentSlots().filter(s => s.state === 'UNKNOWN').length}</span>` },
+        { k: 'Unknown', v: sim.currentSlots().filter(s => s.state === 'UNKNOWN').length },
         { k: 'Out of service', v: sim.currentSlots().filter(s => s.state === 'OOS').length }
       ])));
       services.currentZones().forEach(z => {
         const st = services.signState(services.zoneOccPct(z));
         const card = el('div', 'card');
         card.style.marginTop = '14px';
-        card.innerHTML = `<h2>Zone ${z.name} <span class="hint">${z.vehicle}, ${z.cap} slots, <span class="c-${st}">${services.signLabel(st)}</span></span></h2>${slotGridHtml(z)}`;
+        card.innerHTML = `<h2>Zone ${z.name} <span class="hint">${z.vehicle}, ${z.cap} slots &middot; <span class="st ${services.stClass(st)}"><span class="d"></span>${services.signLabel(st)}</span></span></h2>${slotGridHtml(z)}`;
         root.appendChild(card);
       });
       root.appendChild(el('div', 'card', `<div style="display:flex;gap:8px"><button class="btn ghost" onclick="app.toggleSlotOOS()">Set a free Zone A slot out of service</button></div><div class="disclaimer">In the demo, sensors go quiet at random. That slot then shows as unknown and is not counted as free.</div>`));
@@ -602,13 +602,13 @@ const views = {
           { k: 'Entries', v: STATE.stats.entries },
           { k: 'Exits', v: STATE.stats.exits },
           { k: 'Refused (full)', v: STATE.stats.denied },
-          { k: 'Theft alarms', v: `<span class="c-red">${STATE.stats.mismatch}</span>` }
+          { k: 'Theft alarms', v: STATE.stats.mismatch, alarm: STATE.stats.mismatch > 0 }
         ])}
         <p style="margin-top:10px">Money collected: <b>${fmtVND(STATE.stats.revenue)}</b></p></div>
         <div class="card"><h2>Payment check</h2>
           ${STATE.reconBreaks.length ? `<p class="muted">${STATE.reconBreaks.length} payment(s) the bank did not confirm:</p>
           <table><thead><tr><th>Ref</th><th>Amount</th><th>Note</th></tr></thead><tbody>
-          ${STATE.reconBreaks.slice(0, 8).map(r => `<tr><td>${r.txn}</td><td>${fmtVND(r.amount)}</td><td class="c-orange">${r.reason}</td></tr>`).join('')}
+          ${STATE.reconBreaks.slice(0, 8).map(r => `<tr><td>${r.txn}</td><td>${fmtVND(r.amount)}</td><td>${r.reason}</td></tr>`).join('')}
           </tbody></table>` : '<p class="muted">Everything the system recorded matched the bank report.</p>'}
           <div class="disclaimer">The daily check compares each recorded payment with the bank report and flags any that do not match. Some demo payments drop their confirmation on purpose so this has something to show.</div>
         </div>`;
