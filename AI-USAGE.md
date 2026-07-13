@@ -1,24 +1,11 @@
-# Generative AI Usage Disclosure
+# How we used AI
 
-This disclosure is required by the SE252 project guidelines. It states, transparently, how generative AI was used, the scope of that use, and where the work was reviewed, corrected, and extended by the author.
+The course asks us to say clearly how we used generative AI, so here it is.
 
-## Tools used
-- A large language model (assistant) was used interactively for research synthesis, drafting, and code generation.
+We used an AI assistant while working on this project. We used it mainly in two ways: to help research how real systems handle these problems, and to help draft and speed up writing.
 
-## Scope of use
+For the research side, we asked it about things we did not know: how parking systems use sensors and MQTT, how the university login (CAS) works, and how payment gateways in Vietnam handle the callback after paying. We took what was useful and dropped the parts that did not fit our case. One thing we changed on our own was the whole framing: a lot of the generic material assumes a car park, and we pushed it toward the motorbike reality here, which changed how the entry lane and the slots work.
 
-| Area | How AI was used | Author's own contribution / verification |
-|---|---|---|
-| **Domain research** | Prompted to gather and synthesize how real smart-parking systems, IoT sensor/MQTT stacks, CAS/SSO, and Vietnamese-gateway payment flows work, including web sources. | Author set the direction, selected which findings were relevant to HCMUT, and rejected the generic "Western car-park" framing in favour of the motorbike-dominated reality. |
-| **Requirements (#1)** | Drafted the FR/NFR tables, use-case diagram, and stakeholder analysis from the synthesized research. | Author validated each requirement against the project brief, confirmed the ISO 25010 metrics are realistic, and set scope (reservation optional, BKPay stubbed). |
-| **UML & UI (#2)** | Drafted use-case scenarios and the sequence/activity/state-chart diagrams and UI mockups. | Author checked diagram consistency against the requirements and the intended flows. |
-| **Design (#3)** | Drafted the architecture, deployment view, class diagram, method descriptions, and test cases. | Author confirmed the component split, entity model, and design-pattern choices fit the requirements. |
-| **MVP code** | Generated the single-file HTML/JS simulation (state model, simulation engine, RBAC views). | Author ran the code, found and fixed real defects (pricing-policy resolution picking the wrong tier; the simulation draining instead of filling so signage states never fired), and re-verified behaviour. |
-| **PDF rendering** | Generated the Markdown-to-PDF tooling. | Author verified the diagrams render correctly in the output and fixed a Mermaid note-syntax error that broke one sequence diagram. |
+For the writing, it helped draft the requirements, the diagrams, and the design, and it generated a first version of the demo code. We did not take that as final. We read the requirements against the project brief, checked the diagrams matched the flows, and when we ran the demo we found and fixed real bugs. Two we remember: the price rule was picking the wrong tier so students were not getting their discount, and the simulation was emptying out instead of filling up, so the "nearly full" and "full" signs never showed. We fixed both and ran it again.
 
-## Level of contribution
-AI was used as a drafting and research accelerator. Every artifact was reviewed against the source project description; requirements and design decisions were checked for realism and internal consistency; and the code was executed and debugged rather than accepted as written. The specific engineering judgments — motorbike-first flow, plate-bound anti-theft identity, treating HCMUT_SSO as CAS, stubbing BKPay, the count-based occupancy model, and the modular-monolith scope — were reviewed and owned by the author.
-
-## What was NOT done by AI
-- No claim in the documents is presented as a measured result; performance figures are stated as targets to validate.
-- The demo screenshots are of the actual running MVP, not mock-ups.
+The decisions that matter in the design are ones we understand and stand behind: the barrier-free motorbike lane, tying the plate to the card for theft, treating the login as CAS, stubbing BKPay, and counting slots by adding and subtracting at the gates. The performance numbers in the requirements are targets to test, not things we measured. The screenshots are of the demo actually running.

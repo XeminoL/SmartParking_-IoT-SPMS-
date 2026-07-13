@@ -1,489 +1,430 @@
-# IoT-based Smart Parking Management System (IoT-SPMS)
-## Submission #2 — Use-Case Scenarios, Dynamic Diagrams & UI Design
+# Smart Parking Management System for HCMUT (IoT-SPMS)
+## Submission #2: Use-case scenarios, diagrams, and UI
 
-**Course:** Software Engineering (SE252)
-**Project:** Smart Parking System for University Campus — HCMUT
-**Document status:** v1.0 (builds on the Requirements baseline, Submission #1)
+Course: Software Engineering (SE252)
+This builds on the requirements in Submission #1.
 
----
+## Contents
+1. Use-case scenarios
+2. Sequence diagrams
+3. Activity diagrams
+4. State diagrams
+5. UI design
 
-## Table of Contents
-1. [Use-Case Scenarios](#1-use-case-scenarios)
-2. [Sequence Diagrams](#2-sequence-diagrams)
-3. [Activity Diagrams](#3-activity-diagrams)
-4. [State-chart Diagrams](#4-state-chart-diagrams)
-5. [UI Design — Mockups & Screen Flow](#5-ui-design--mockups--screen-flow)
+## 1. Use-case scenarios
 
----
+We wrote out the main flows for the use cases in the diagram. The IDs (FR-...) point back to the requirements in Submission #1.
 
-## 1. Use-Case Scenarios
+### UC-02: Member enters (motorbike lane)
 
-Scenarios use the standard fully-dressed tabular format (Cockburn style): main success scenario plus extensions/alternate flows. IDs link back to functional requirements in Submission #1.
+Actors: member driver, plus the camera, card reader, and slot sensor.
+Precondition: the member has an account and a registered card/plate, and the entry lane is working.
+Trigger: a vehicle shows up at the entry lane.
+Result on success: an open session with the entry time, lane, card, plate, and a photo; the free count for that area goes down by one; the entry is logged.
 
-### UC-02 — Enter Lot (Member, motorbike lane)
+Main flow:
+1. The vehicle arrives and the system starts reading the credential.
+2. The reader reads the card, the camera reads the plate and takes a photo.
+3. The system checks the card against membership and the blacklist.
+4. It checks the target area is not full.
+5. It opens a session and logs the entry as granted.
+6. It lowers the free count and updates the signs.
+7. For the car lane it opens the barrier.
 
-| Field | Content |
-|---|---|
-| **Use case** | Enter Lot (Member) |
-| **Actors** | Member Driver (primary); ANPR Camera, RFID/NFC Reader, Slot Sensor, Guidance Signage (secondary) |
-| **Stakeholders** | Member (fast entry), University (throughput, anti-theft), Operator (fewer exceptions) |
-| **Preconditions** | Member has an active HCMUT identity and a registered card/plate; the entry lane is operational. |
-| **Trigger** | A vehicle is detected approaching the entry lane (FR-ENT-01). |
-| **Postcondition (success)** | An **ACTIVE ParkingSession** exists recording {entry time, lane, card ID, plate, photo}; the zone free-count is decremented; the entry is logged. |
-| **Related requirements** | FR-ENT-01..04, FR-ENT-07, FR-OCC-03, FR-AUD-04 |
+What can go wrong:
+- Card invalid or blacklisted: refuse, log the reason, show it, stop.
+- Area full: send the driver to another area; if the whole lot is full, show full and refuse.
+- No card at all: switch to the visitor flow (UC-02b).
+- Plate does not match the member's registered plate: let them in but flag it, so we can check at exit.
+- Network down: the gate decides from its local cache and queues the event to sync later.
 
-**Main success scenario**
-1. The vehicle approaches; the system detects it and triggers credential capture.
-2. The RFID/NFC reader reads the member card; the ANPR camera reads the plate and captures a photo.
-3. The system validates the card against active membership and the blacklist.
-4. The system checks that the target zone is not full.
-5. The system verifies the read plate is a registered plate for that member (or records it if first-seen and policy allows).
-6. The system creates an ACTIVE ParkingSession and records the AccessEvent (decision = GRANTED).
-7. The system decrements the zone free-count and updates guidance signage.
-8. (Car lane only) The system commands the entry barrier to open.
-9. The system displays/announces a "welcome, proceed to Zone X" guidance.
+### UC-02b: Visitor enters
 
-**Extensions / alternate flows**
-- **3a. Card invalid or blacklisted:** deny entry, record AccessEvent (DENIED, reason), show reason; end.
-- **4a. Zone/lot full:** the system directs the driver to an alternative zone (FR-SIG-03); if the whole lot is full, deny and display FULL (FR-ENT-06).
-- **2a. No card presented (visitor or forgotten card):** trigger **UC-02b Enter Lot (Visitor)**.
-- **5a. Plate not registered to this member:** flag for operator review but allow entry (grace), noting the discrepancy for exit reconciliation.
-- **\*a. Backend/network outage:** the gate makes a locally cached decision and queues the event for sync within 60 s (FR-ENT-08).
+Actors: visitor driver, operator, camera.
+Precondition: the visitor has no account and there is room for visitors.
+Trigger: no member card at the lane, or a member without their card asks to get in.
+Result: a plate-only session is open and a QR ticket is issued.
 
-### UC-02b — Enter Lot (Visitor / temporary access)
+Main flow:
+1. The system (or the operator) sees there is no valid member card.
+2. The camera reads and stores the plate, and a photo is taken.
+3. A QR ticket is issued and a plate-only session opens, not tied to the SSO.
+4. The entry is logged and the free count goes down.
 
-| Field | Content |
-|---|---|
-| **Actors** | Visitor Driver (primary); Parking Operator, ANPR Camera |
-| **Preconditions** | Visitor has no campus account; visitor capacity available. |
-| **Trigger** | No member credential is presented at the lane, or a member requests temporary access without a card. |
-| **Postcondition** | A **plate-only session** is open and a QR ticket is issued (FR-ENT-05). |
+If the plate cannot be read, the operator types it in. If there is no room for visitors, refuse and say so.
 
-**Main success scenario**
-1. The system (or operator) detects no valid member credential.
-2. The ANPR camera reads and stores the plate; an entry photo is captured.
-3. The system issues a QR parking ticket and opens a plate-only ParkingSession managed independently of HCMUT_SSO.
-4. The system records the AccessEvent and updates the free-count.
+### UC-03: Exit and pay
 
-**Extensions**
-- **2a. Plate unreadable:** the operator enters the plate manually; continue.
-- **3a. Visitor capacity full:** deny and inform; end.
+Actors: member or visitor driver, camera, card reader, BKPay, barrier, and the operator for problems.
+Precondition: there is an open session for the vehicle.
+Trigger: the vehicle is at the exit lane.
+Result on success: the session is closed, a paid record exists, the free count goes up, and the exit is logged.
 
-### UC-03 — Exit & Pay
+Main flow:
+1. The system reads the card or ticket and reads the plate again.
+2. It finds the open session.
+3. It compares the exit plate with the entry plate.
+4. It works out the fee from the time and the price rule.
+5. It charges the balance, sends the driver to BKPay, or the operator takes cash.
+6. When paid, it saves the amount on the record and closes the session.
+7. It raises the free count and updates the signs.
+8. For the car lane it opens the barrier.
 
-| Field | Content |
-|---|---|
-| **Use case** | Exit & Pay |
-| **Actors** | Member/Visitor Driver (primary); ANPR Camera, RFID Reader, BKPay Gateway, Barrier Controller, Operator (exception) |
-| **Preconditions** | An ACTIVE session exists for the vehicle. |
-| **Trigger** | The vehicle presents at an exit lane. |
-| **Postcondition (success)** | The session is COMPLETED, a paid BillingRecord exists, the free-count is incremented, and the exit is logged. |
-| **Related requirements** | FR-EXT-01..08, FR-AUD-04 |
+What can go wrong:
+- The plates do not match: raise a theft alarm, hold the session, tell the operator (UC-08), keep the barrier shut until it is sorted.
+- No open session found (lost ticket): the operator opens a lost-ticket case, charges a lost-ticket fee, and closes it by hand.
+- Not enough balance: offer a top-up, BKPay, or cash.
+- The BKPay callback never arrives: the session stays waiting for payment and the daily check (FR-ADM-06) catches it, or the operator confirms it if there is proof.
+- Member on a monthly pass: the fee is zero, so skip payment and close the session.
 
-**Main success scenario**
-1. The system reads the card/ticket and re-reads the plate at exit.
-2. The system locates the matching ACTIVE session.
-3. The system **compares the entry plate to the exit plate**.
-4. The system computes the fee from duration and the applicable pricing policy (rounding + daily cap).
-5. The system charges the prepaid wallet, or redirects to BKPay, or the operator accepts cash.
-6. On payment success, the system **freezes the amount and rule version** onto the BillingRecord and marks the session COMPLETED.
-7. The system increments the zone free-count and updates signage.
-8. (Car lane) The system commands the exit barrier to open.
+### UC-08: Watch the lot and handle alarms
 
-**Extensions / alternate flows**
-- **3a. Plate mismatch (entry ≠ exit):** raise **anti-theft alarm** (FR-EXT-04); hold the session PENDING_PAYMENT/held; notify the operator (UC-08); block barrier; end until resolved.
-- **2a. No active session found (lost ticket):** operator opens a lost-ticket exception, charges a lost-ticket fee, and creates a manual close.
-- **5a. Insufficient wallet balance:** offer top-up or BKPay redirect or cash.
-- **5b. BKPay IPN not received:** the session stays PENDING_PAYMENT; the reconciliation job (FR-ADM-06) resolves it; the operator may manually confirm on evidence.
-- **5c. Member on monthly pass:** fee = 0; skip payment, close session.
+Actor: operator, logged in for their lot.
+Trigger: an alarm comes up, or the operator opens the board.
+Result: the alarm is dealt with and the action is logged.
 
-### UC-08 — Monitor Lot & Handle Alarms
+Main flow:
+1. The operator looks at the live board (occupancy, open sessions, alarms).
+2. An alarm shows up (plate mismatch, stuck barrier, faulty sensor, or a double entry).
+3. The operator looks at the related session or vehicle (find by plate, FR-AUD-02).
+4. The operator acts (open by hand, hold, mark resolved).
+5. The system logs what they did.
 
-| Field | Content |
-|---|---|
-| **Actors** | Parking Operator (primary) |
-| **Preconditions** | Operator authenticated with `operator` role, scoped to the lot. |
-| **Trigger** | An alarm is raised, or the operator opens the live board. |
-| **Postcondition** | The alarm is acknowledged/resolved and the action is audited. |
+### UC-12: Configure fees, zones, devices (admin)
 
-**Main success scenario**
-1. The operator views the live lot board (occupancy, active sessions, open alarms).
-2. An alarm appears (plate mismatch / stuck barrier / faulty sensor / double-entry).
-3. The operator inspects the related session/vehicle (look-up by plate, FR-AUD-02).
-4. The operator takes an action (manual open, hold, mark resolved, escalate).
-5. The system records the action in the audit log (FR-AUD-04).
+Actor: admin.
+Result: the new setting is active and the change is logged.
 
-### UC-12 — Configure Tariffs / Zones / Devices (Admin)
+Main flow:
+1. The admin opens the configuration.
+2. They edit a price rule and give it a start and end date.
+3. The system checks there is no overlap with another active rule for the same type.
+4. It saves and activates the change and logs it.
 
-| Field | Content |
-|---|---|
-| **Actors** | System Administrator |
-| **Preconditions** | Authenticated with `admin` role. |
-| **Postcondition** | New configuration is versioned and active; the change is audited. |
+If the new rule overlaps an existing one, reject it and explain why.
 
-**Main success scenario**
-1. The admin opens configuration (tariffs, zones, slots, sensors, signage thresholds).
-2. The admin edits a pricing policy, setting `valid-from`/`valid-to`.
-3. The system validates the change (no overlapping active rules for the same class).
-4. The system versions and activates the change and records it in the audit log.
+## 2. Sequence diagrams
 
-**Extensions**
-- **3a. Overlapping rule:** reject with an explanatory message; no change.
-
----
-
-## 2. Sequence Diagrams
-
-### SD-1 — Member entry (motorbike lane, barrier-free)
+### SD-1: Member entry
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor Driver as Member Driver
-    participant ANPR as ANPR Camera
-    participant Reader as RFID Reader
-    participant Gate as AccessControl Service
-    participant Avail as Availability Service
-    participant Sign as Signage Service
-    participant Repo as Session Repository
+    participant Reader as Card Reader
+    participant ANPR as Camera
+    participant Gate as Access Control
+    participant Avail as Availability
+    participant Repo as Session store
 
-    Driver->>Reader: Tap card (on the move)
+    Driver->>Reader: Tap card
     Driver->>ANPR: Vehicle in frame
-    Reader-->>Gate: cardId
+    Reader-->>Gate: card id
     ANPR-->>Gate: plate + photo
-    Gate->>Gate: validateMembership(cardId) & checkBlacklist
-    Gate->>Avail: isZoneAvailable(zone)?
-    Avail-->>Gate: free = true
-    Gate->>Repo: createSession(cardId, plate, entryTime, photo)
-    Repo-->>Gate: session#ACTIVE
-    Gate->>Avail: decrementFreeCount(zone)
-    Avail->>Sign: pushState(zone, "xx SPACES")
-    Gate-->>Driver: Grant + guidance "Zone A"
-    Note over Gate,Repo: AccessEvent(GRANTED) written to audit log
+    Gate->>Gate: check membership and blacklist
+    Gate->>Avail: is the area free?
+    Avail-->>Gate: yes
+    Gate->>Repo: open session (card, plate, time, photo)
+    Repo-->>Gate: session (open)
+    Gate->>Avail: lower free count
+    Gate-->>Driver: let in, go to Area A
+    Note over Gate,Repo: entry written to the log
 ```
 
-### SD-2 — Exit & pay with plate-match check + BKPay
+### SD-2: Exit and pay, with the plate check
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor Driver
-    participant ANPR as ANPR Camera
-    participant Gate as AccessControl Service
-    participant Bill as Billing Service
-    participant Pay as Payment Service
-    participant BKPay as BKPay Gateway
-    participant Avail as Availability Service
+    participant ANPR as Camera
+    participant Gate as Access Control
+    participant Bill as Billing
+    participant Pay as Payment
+    participant BKPay as BKPay
+    participant Avail as Availability
 
-    Driver->>Gate: Present card/ticket at exit
-    ANPR-->>Gate: exitPlate
-    Gate->>Bill: findActiveSession(cardId)
-    Bill-->>Gate: session(entryPlate, entryTime)
-    Gate->>Gate: compare(entryPlate, exitPlate)
-    alt plate mismatch
-        Gate-->>Driver: DENY + Anti-theft alarm
-        Gate->>Gate: raiseAlarm(PLATE_MISMATCH)  %% -> Operator (UC-08)
-    else plate match
-        Gate->>Bill: computeFee(session, policy)
-        Bill-->>Gate: amount, ruleVersion
-        Gate->>Pay: charge(session, amount)
-        Pay->>BKPay: redirect / request (order id, HMAC)
-        BKPay-->>Pay: IPN callback (verify HMAC, idempotent)
-        Pay-->>Bill: markPaid(session) freeze(amount, ruleVersion)
-        Bill-->>Gate: COMPLETED
-        Gate->>Avail: incrementFreeCount(zone)
-        Gate-->>Driver: Open / proceed
+    Driver->>Gate: present card/ticket at exit
+    ANPR-->>Gate: exit plate
+    Gate->>Bill: find the open session
+    Bill-->>Gate: session (entry plate, entry time)
+    Gate->>Gate: compare entry plate and exit plate
+    alt plates do not match
+        Gate-->>Driver: refuse, theft alarm
+        Gate->>Gate: raise alarm, tell operator
+    else plates match
+        Gate->>Bill: work out the fee
+        Bill-->>Gate: amount
+        Gate->>Pay: charge
+        Pay->>BKPay: redirect to pay
+        BKPay-->>Pay: payment callback
+        Pay-->>Bill: mark paid, save amount
+        Bill-->>Gate: session closed
+        Gate->>Avail: raise free count
+        Gate-->>Driver: open, go ahead
     end
 ```
 
-### SD-3 — Sensor state change → availability → signage (IoT path with resilience)
+### SD-3: Sensor change to sign
 
 ```mermaid
 sequenceDiagram
     autonumber
     participant Sensor as Slot Sensor
-    participant GW as IoT Gateway
+    participant GW as Gateway
     participant Broker as MQTT Broker
     participant Ingest as Sensor Ingestion
-    participant Avail as Availability Service
-    participant Sign as Signage Service
+    participant Avail as Availability
+    participant Sign as Signs
 
-    Sensor->>GW: state delta (occupied/vacant)
-    GW->>Broker: publish parking/lot/zone/slot/state (QoS1, retained)
-    Broker->>Ingest: deliver message
-    Ingest->>Ingest: debounce + dedupe + validate
-    Ingest->>Avail: SlotStateChanged(slotId, old, new, ts)
-    Avail->>Avail: recompute zone free-count (delta)
-    Avail->>Sign: pushState(zone, GREEN/YELLOW/ORANGE/RED)
-    Note over Broker,Ingest: If a gateway goes silent past 1.5x keep-alive (~90s), its LWT publishes offline; affected slots are marked UNKNOWN and never counted as free.
+    Sensor->>GW: slot changed (taken/free)
+    GW->>Broker: publish the change
+    Broker->>Ingest: deliver
+    Ingest->>Ingest: ignore duplicates, check it
+    Ingest->>Avail: slot changed
+    Avail->>Avail: update the area free count
+    Avail->>Sign: push the new state
+    Note over Broker,Ingest: if a gateway stops reporting for too long, its slots are marked unknown and not counted as free
 ```
 
-### SD-4 — Authentication via HCMUT_SSO (CAS) + DataCore enrichment
+### SD-4: Login through HCMUT_SSO
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor User
-    participant App as Parking Web App
-    participant Auth as Auth/SSO Adapter
-    participant CAS as HCMUT_SSO (CAS)
-    participant DC as HCMUT_DATACORE
+    participant App as Parking app
+    participant Auth as Login handler
+    participant CAS as HCMUT_SSO
+    participant DC as DATACORE
 
-    User->>App: Open protected page
-    App-->>User: 302 redirect to CAS login (service=callback)
-    User->>CAS: username (BKNetID/MSSV) + password
-    CAS-->>User: 302 back to service?ticket=ST-xxxx
-    User->>App: callback with ST-xxxx
-    App->>Auth: validate(ST)
-    Auth->>CAS: /p3/serviceValidate?service=..&ticket=ST-xxxx
-    CAS-->>Auth: authenticationSuccess + attributes(uid, affiliation)
-    Auth->>DC: getProfile(uid)  [read-only, cache TTL 24h]
-    DC-->>Auth: fullName, faculty, vehicle/plate
-    Auth->>App: mint local JWT/session
-    App-->>User: Authenticated (role + affiliation resolved)
+    User->>App: open a page that needs login
+    App-->>User: redirect to the SSO login
+    User->>CAS: username and password
+    CAS-->>User: redirect back with a ticket
+    User->>App: come back with the ticket
+    App->>Auth: validate the ticket
+    Auth->>CAS: check the ticket
+    CAS-->>Auth: ok, plus a few user fields
+    Auth->>DC: get the rest of the profile (read only)
+    DC-->>Auth: name, faculty, vehicle
+    Auth->>App: create a local session
+    App-->>User: logged in
 ```
 
----
+## 3. Activity diagrams
 
-## 3. Activity Diagrams
-
-### AD-1 — Entry decision flow (member + visitor branches)
+### AD-1: Entry decision
 
 ```mermaid
 flowchart TD
-    A([Vehicle detected]) --> B{Credential present?}
-    B -- Member card/QR --> C[Read card + ANPR plate]
-    B -- None --> V[Visitor flow: read plate, issue QR ticket]
-    C --> D{Valid & not blacklisted?}
-    D -- No --> X[Deny + record reason]
-    D -- Yes --> E{Zone/lot full?}
-    E -- Full --> F{Alternative zone free?}
-    F -- Yes --> G[Guide to alternative zone]
-    F -- No --> X2[Display FULL + deny]
-    E -- Not full --> H[Create ACTIVE session + entry photo]
+    A([Vehicle detected]) --> B{Has a credential?}
+    B -- Member card/QR --> C[Read card and plate]
+    B -- None --> V[Visitor flow: read plate, issue ticket]
+    C --> D{Valid and not blacklisted?}
+    D -- No --> X[Refuse, log reason]
+    D -- Yes --> E{Area or lot full?}
+    E -- Full --> F{Another area free?}
+    F -- Yes --> G[Send to that area]
+    F -- No --> X2[Show full, refuse]
+    E -- Not full --> H[Open session, take photo]
     G --> H
     V --> H
-    H --> I[Decrement free-count + update signage]
-    I --> J([Grant / proceed])
+    H --> I[Lower free count, update signs]
+    I --> J([Let in])
     X --> Z([End])
     X2 --> Z
 ```
 
-### AD-2 — Exit & payment flow
+### AD-2: Exit and payment
 
 ```mermaid
 flowchart TD
-    A([Vehicle at exit]) --> B[Read card/ticket + ANPR plate]
-    B --> C[Find active session]
-    C --> D{Entry plate == exit plate?}
-    D -- No --> AL[Raise anti-theft alarm -> hold -> notify operator]
-    D -- Yes --> E{Monthly pass active?}
+    A([Vehicle at exit]) --> B[Read card/ticket and plate]
+    B --> C[Find the open session]
+    C --> D{Entry plate = exit plate?}
+    D -- No --> AL[Theft alarm, hold, tell operator]
+    D -- Yes --> E{Monthly pass?}
     E -- Yes --> P0[Fee = 0]
-    E -- No --> F[Compute fee: duration x policy, cap, rounding]
-    F --> G{Payment method}
-    G -- Wallet --> H{Balance enough?}
-    H -- No --> T[Prompt top-up / switch method]
-    H -- Yes --> PAY[Charge wallet]
-    G -- BKPay --> BK[Redirect + await IPN]
-    G -- Cash --> CA[Operator collects cash]
+    E -- No --> F[Work out the fee]
+    F --> G{How to pay}
+    G -- Balance --> H{Enough?}
+    H -- No --> T[Top up or switch]
+    H -- Yes --> PAY[Charge the balance]
+    G -- BKPay --> BK[Redirect and wait for callback]
+    G -- Cash --> CA[Operator takes cash]
     P0 --> DONE
     PAY --> DONE
     BK --> DONE
     CA --> DONE
-    DONE[Freeze amount + rule version -> COMPLETED] --> I[Increment free-count + update signage]
-    I --> J([Open / proceed])
+    DONE[Save the amount, close session] --> I[Raise free count, update signs]
+    I --> J([Open])
     T --> G
-    AL --> Z([End - held])
+    AL --> Z([End, held])
 ```
 
-### AD-3 — Sensor ingestion & staleness handling
+### AD-3: Handling a sensor update
 
 ```mermaid
 flowchart TD
-    A([MQTT message received]) --> B[Debounce + dedupe]
-    B --> C{Valid payload?}
-    C -- No --> D[Drop + increment error metric]
-    C -- Yes --> E[Update slot state + lastSeenAt]
-    E --> F[Emit SlotStateChanged event]
-    F --> G[Recompute zone free-count]
-    subgraph Watchdog [Periodic watchdog]
-        W1([Every interval]) --> W2{Any slot lastSeenAt older than staleness timeout?}
-        W2 -- Yes --> W3[Mark slot UNKNOWN + never count as free + alert]
-        W2 -- No --> W4([OK])
+    A([Message from a sensor]) --> B[Ignore duplicates]
+    B --> C{Looks valid?}
+    C -- No --> D[Drop it]
+    C -- Yes --> E[Update the slot and the last-seen time]
+    E --> F[Recount the area]
+    subgraph Watchdog [Runs every so often]
+        W1([Check all slots]) --> W2{Any not seen for too long?}
+        W2 -- Yes --> W3[Mark unknown, do not count as free, alert]
+        W2 -- No --> W4([Fine])
     end
     D --> Z([End])
-    G --> Z
+    F --> Z
 ```
 
----
+## 4. State diagrams
 
-## 4. State-chart Diagrams *(bonus)*
-
-### ST-1 — ParkingSession lifecycle
+### ST-1: A parking session
 
 ```mermaid
 stateDiagram-v2
-    [*] --> ACTIVE : entry granted (FR-ENT-04)
-    ACTIVE --> PENDING_PAYMENT : exit requested, fee > 0
-    ACTIVE --> COMPLETED : exit, fee = 0 (pass)
-    ACTIVE --> HELD : plate mismatch / alarm (FR-EXT-04)
-    PENDING_PAYMENT --> COMPLETED : payment settled (IPN verified)
-    PENDING_PAYMENT --> HELD : payment failed / disputed
-    HELD --> COMPLETED : operator resolves
-    ACTIVE --> ABANDONED : max stay exceeded, no exit
-    ACTIVE --> EXPIRED : reservation window passed (no entry)
-    COMPLETED --> [*]
-    ABANDONED --> [*]
-    EXPIRED --> [*]
+    [*] --> Active : entry granted
+    Active --> WaitingPayment : exit, fee > 0
+    Active --> Closed : exit, fee = 0 (pass)
+    Active --> Held : plate mismatch
+    WaitingPayment --> Closed : paid
+    WaitingPayment --> Held : payment failed
+    Held --> Closed : operator sorts it out
+    Active --> Abandoned : stayed past the max, no exit
+    Closed --> [*]
+    Abandoned --> [*]
 ```
 
-### ST-2 — ParkingSlot lifecycle
+### ST-2: A slot
 
 ```mermaid
 stateDiagram-v2
-    [*] --> FREE
-    FREE --> OCCUPIED : sensor occupied / session created
-    OCCUPIED --> FREE : sensor vacant / session closed
-    FREE --> RESERVED : reservation held
-    RESERVED --> OCCUPIED : reserved vehicle enters
-    RESERVED --> FREE : reservation released / no-show timeout
-    FREE --> UNKNOWN : sensor stale > timeout
-    OCCUPIED --> UNKNOWN : sensor stale > timeout
-    UNKNOWN --> FREE : fresh "vacant" report
-    UNKNOWN --> OCCUPIED : fresh "occupied" report
-    FREE --> OUT_OF_SERVICE : admin disables
-    OUT_OF_SERVICE --> FREE : admin re-enables
+    [*] --> Free
+    Free --> Taken : sensor taken / session opened
+    Taken --> Free : sensor free / session closed
+    Free --> Reserved : booking held
+    Reserved --> Taken : the booked vehicle enters
+    Reserved --> Free : booking released or no-show
+    Free --> Unknown : sensor not seen for too long
+    Taken --> Unknown : sensor not seen for too long
+    Unknown --> Free : a fresh "free" report
+    Unknown --> Taken : a fresh "taken" report
+    Free --> OutOfService : admin disables
+    OutOfService --> Free : admin re-enables
 ```
 
-### ST-3 — Sensor/Gateway health (MQTT LWT + heartbeat)
+## 5. UI design
 
-```mermaid
-stateDiagram-v2
-    [*] --> ONLINE : connect + retained "online"
-    ONLINE --> ONLINE : heartbeat / state delta received
-    ONLINE --> SUSPECT : no message within keep-alive (60s)
-    SUSPECT --> ONLINE : message received (debounce clears)
-    SUSPECT --> OFFLINE : LWT fired at 1.5x keep-alive (~90s)
-    OFFLINE --> ONLINE : reconnect + retained "online"
-    ONLINE --> FAULTY : implausible readings / error threshold
-    FAULTY --> ONLINE : recalibrated by maintenance
-```
+The prototype in the `mvp` folder has these screens. Below are rough sketches of the layout and a map of how the screens connect.
 
----
-
-## 5. UI Design — Mockups & Screen Flow
-
-The prototype (see `/mvp`) implements these screens. Below are text/ASCII mockups with layout, key elements, and the screen-flow map. Roles are colour-coded in the app.
-
-### 5.1 Screen-flow map
+### Screen map
 
 ```mermaid
 flowchart LR
-    LOGIN[Login via SSO] --> ROLE{Role}
-    ROLE -- Driver --> DASH[Driver Dashboard]
-    ROLE -- Operator --> OPS[Operator Live Board]
-    ROLE -- Admin --> ADMIN[Admin Console]
-    DASH --> AVAIL[Availability Map]
-    DASH --> WALLET[Wallet & History]
-    OPS --> LOOKUP[Vehicle Lookup]
+    LOGIN[Login] --> ROLE{Role}
+    ROLE -- Driver --> DASH[Driver home]
+    ROLE -- Operator --> OPS[Operator board]
+    ROLE -- Admin --> ADMIN[Admin]
+    DASH --> AVAIL[Availability map]
+    DASH --> WALLET[Wallet and history]
+    OPS --> LOOKUP[Vehicle lookup]
     OPS --> ALARMS[Alarms]
-    OPS --> VISITOR[Issue Visitor Ticket]
-    ADMIN --> TARIFF[Tariffs]
-    ADMIN --> ZONES[Zones/Sensors]
-    ADMIN --> REPORTS[Reports & Reconciliation]
-    ADMIN --> USERS[Users & Roles]
+    OPS --> VISITOR[Visitor ticket]
+    ADMIN --> TARIFF[Fees]
+    ADMIN --> ZONES[Zones and sensors]
+    ADMIN --> REPORTS[Reports]
+    ADMIN --> USERS[Users and roles]
 ```
 
-### 5.2 Driver — Availability Map (live)
+### Driver: availability map
 
 ```
 +------------------------------------------------------------------+
-|  IoT-SPMS   Campus: Lý Thường Kiệt ▾        [Nguyen V.A] 💰 45k ▾ |
+|  IoT-SPMS   Campus: Ly Thuong Kiet          Nguyen V.A   45k      |
 +------------------------------------------------------------------+
-|  Zone A  ● GREEN   112 / 150 free                                |
-|  Zone B  ● YELLOW   28 / 120 free   → try Zone A                 |
-|  Zone C  ● RED       0 / 100 FULL   → nearest free: Zone A       |
+|  Area A   green    112 / 150 free                                |
+|  Area B   yellow    28 / 120 free    try Area A                  |
+|  Area C   full       0 / 100         nearest free: Area A        |
 |------------------------------------------------------------------|
-|   [ A ]  ▢▢▢▣▣▢▢▢▢▢   ▢ free  ▣ occupied  ▨ unknown  ◪ reserved  |
-|   [ B ]  ▣▣▣▣▣▢▢▣▣▨                                              |
-|   [ C ]  ▣▣▣▣▣▣▣▣▣▣                                              |
+|   A    [][][]XX[][][][][]    [] free  XX taken  ?? unknown        |
+|   B    XXXXXX[][]X?                                              |
+|   C    XXXXXXXXXX                                               |
 |------------------------------------------------------------------|
-|  Updated 2s ago · near-real-time      [Reserve]  [Directions]    |
+|  Updated 2s ago            [Reserve]   [Directions]              |
 +------------------------------------------------------------------+
 ```
-Elements: campus/zone selector; per-zone availability bar with colour state; live slot grid with legend (incl. **unknown** and **reserved**); freshness timestamp; primary actions. Colour = sign state from configurable thresholds (FR-SIG-01/04).
 
-### 5.3 Entrance signage (public display)
+The area bar is colored by its state, the grid shows each slot, and there is a legend that includes "unknown" so a stale sensor is not mistaken for a free slot.
+
+### Entrance sign
 
 ```
-        ╔══════════════════════════════════╗
-        ║      LÝ THƯỜNG KIỆT PARKING       ║
-        ║                                    ║
-        ║        ●  1 4 0   SPACES          ║   green
-        ║                                    ║
-        ║      Zone A →      Zone B →        ║
-        ╚══════════════════════════════════╝
-   (turns YELLOW "NEARLY FULL" at 90%, RED "FULL" at 100%)
+        +----------------------------------+
+        |      LY THUONG KIET PARKING      |
+        |                                  |
+        |          140  SPACES             |
+        |                                  |
+        |      Area A ->    Area B ->      |
+        +----------------------------------+
 ```
 
-### 5.4 Operator — Live Board
+It turns to "nearly full" at 90% and "full" at 100%.
+
+### Operator board
 
 ```
 +------------------------------------------------------------------+
-|  OPERATOR · Lot: LTK-Main       🔔 2 alarms      [logout]         |
+|  OPERATOR   Lot: LTK-Main        2 alarms          [logout]      |
 +------------------------------------------------------------------+
-|  OCCUPANCY   A ███████░░ 75%   B ██████████ 100%   C ████░░ 40%  |
+|  A  75%    B  100%    C  40%                                     |
 |------------------------------------------------------------------|
-|  ⚠ ALARMS                                                        |
-|   • 12:41  PLATE MISMATCH  session #8842  59-P1 234.56 [Inspect] |
-|   • 12:38  SENSOR FAULT    slot B-07              [Ack] [Dispatch]|
+|  ALARMS                                                          |
+|   12:41  PLATE MISMATCH  session 8842  59-P1 234.56  [Inspect]  |
+|   12:38  SENSOR FAULT    slot B-07             [Ack] [Dispatch]  |
 |------------------------------------------------------------------|
-|  🔎 Find vehicle by plate: [ 59-____.__ ]  [Search]              |
-|  Active sessions: 1,204   ·  Visitors in lot: 37                 |
-|  [ Issue Visitor Ticket ]    [ Manual Open ]                     |
+|  Find vehicle by plate: [ 59-____.__ ]  [Search]                |
+|  Open sessions: 1,204     Visitors in lot: 37                   |
+|  [ Issue visitor ticket ]   [ Manual open ]                     |
 +------------------------------------------------------------------+
 ```
-Elements: occupancy bars, alarm queue with actions (Inspect/Ack/Dispatch), plate search (target ≤15 s, NFR-USE-01), quick actions.
 
-### 5.5 Exit terminal — Fee & payment
+### Exit terminal
 
 ```
 +---------------------------------------------+
-|            EXIT · Fee Summary               |
+|            EXIT - Fee                       |
 |---------------------------------------------|
-|  Plate:  59-P1 234.56   ✓ matches entry     |
-|  Entry:  07:12   Exit: 12:45   Dur: 5h33m   |
-|  Vehicle: Motorbike   Tier: Student (-15%)  |
-|  Fee:                    5,000 ₫            |
+|  Plate:  59-P1 234.56   matches entry       |
+|  Entry:  07:12  Exit: 12:45  Stay: 5h33m    |
+|  Vehicle: Motorbike   Student (-15%)        |
+|  Fee:                  5,000 VND            |
 |---------------------------------------------|
-|  Pay with:  ( ) Wallet 45,000₫              |
+|  Pay with:  ( ) Balance 45,000 VND          |
 |             ( ) BKPay                       |
 |             ( ) Cash (operator)             |
-|          [ Confirm & Exit ]                 |
+|          [ Confirm and exit ]               |
 +---------------------------------------------+
 ```
 
-### 5.6 Admin — Tariff configuration
+### Admin: fees
 
 ```
 +------------------------------------------------------------------+
-|  ADMIN · Pricing Policies                          [+ New rule]  |
+|  ADMIN - Price rules                            [+ New]          |
 +------------------------------------------------------------------+
-|  Name           Vehicle  Tier      Rate     Free   Cap   Valid   |
-|  Std Motorbike  🏍 MB    all       2,000/day 30m   —    2024→    |
-|  Student MB     🏍 MB    student   -15%      30m    —    2024→    |
-|  Std Car        🚗 Car   all       5,000/2h  15m   50k  2024→    |
-|  Visitor Flat   any      visitor   flat 8,000  —    —    2024→    |
+|  Name          Vehicle  Type     Rate       Free  Cap   From     |
+|  Std MB        MB       all      3,000/day  30m   -     2024     |
+|  Student MB    MB       student  -15%       30m   -     2024     |
+|  Std Car       Car      all      5,000/2h   15m   50k   2024     |
+|  Visitor       any      visitor  flat 8,000  -    -     2024     |
 |------------------------------------------------------------------|
-|  Signage thresholds:  green<[75]%  yellow<[90]%  red=[100]%      |
-|                                          [ Save (versioned) ]    |
+|  Sign thresholds:  green < [75] %   nearly full at [90] %        |
+|                                          [ Save ]                |
 +------------------------------------------------------------------+
 ```
 
-### 5.7 UI design principles applied
-- **Role-appropriate density:** drivers get a simple map; operators get a dense board; admins get tables.
-- **State is always visible & timestamped** (near-real-time honesty per NFR-PERF-02).
-- **Colour = configurable sign state**, consistent everywhere (green/yellow/orange/red), with an explicit "unknown" swatch so a stale sensor never looks free.
-- **Anti-theft made visible:** the exit screen shows the plate-match check result explicitly.
-- **Vietnamese context:** motorbike-first, currency in ₫, campus selector for multi-site.
-```
+A few things we kept in mind for the UI. The driver screen is kept simple; the operator board is denser because they need more on one screen. We show the last-updated time on each screen so stale data is not mistaken for live. The colors mean the same thing everywhere, and we added an "unknown" state so a broken sensor does not look like a free slot. The exit screen shows the plate-check result on purpose since that is the anti-theft part. And it is all built around motorbikes and Vietnamese plates because that is what it is here.

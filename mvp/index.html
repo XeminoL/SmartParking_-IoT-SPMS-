@@ -3,12 +3,9 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>IoT-SPMS — Smart Parking Management System (HCMUT)</title>
+<title>Smart Parking (HCMUT) - demo</title>
 <style>
-/* ============================================================
-   IoT-SPMS — Smart Parking Management System (MVP simulation)
-   Single-file. Vanilla JS. No network dependency.
-   ============================================================ */
+/* styles for the smart parking demo */
 :root{
   --bg:#0f1420; --bg2:#161d2e; --panel:#1b2337; --panel2:#222c45;
   --line:#2c3852; --txt:#e6ecf5; --muted:#93a2bd; --muted2:#6b7a99;
@@ -196,62 +193,52 @@ footer{color:var(--muted2);font-size:11.5px;text-align:center;padding:18px}
 </head>
 <body>
 
-<!-- ===================== LOGIN ===================== -->
+<!-- login -->
 <div id="login">
   <div class="login-card">
-    <div class="brand"><span class="logo">🅿️</span>
-      <div><h1>IoT-SPMS</h1></div>
+    <div class="brand">
+      <div><h1>Smart Parking</h1></div>
     </div>
-    <p class="sub">Smart Parking Management System · HCMUT Campus (SE252 MVP)</p>
+    <p class="sub">HCMUT campus, SE252 demo</p>
     <div class="role-pick">
       <button class="role-btn" onclick="app.login('driver')">
-        <span class="ic">🧑‍🎓</span>
-        <span><span class="t">Sign in as Member Driver</span><br><span class="d">Nguyễn Văn A · Student · via HCMUT_SSO</span></span>
+        <span><span class="t">Sign in as a driver</span><br><span class="d">Nguyễn Văn A, student</span></span>
       </button>
       <button class="role-btn" onclick="app.login('operator')">
-        <span class="ic">👮</span>
-        <span><span class="t">Sign in as Parking Operator</span><br><span class="d">Live board · alarms · visitor tickets</span></span>
+        <span><span class="t">Sign in as an operator</span><br><span class="d">board, alarms, visitor tickets</span></span>
       </button>
       <button class="role-btn" onclick="app.login('admin')">
-        <span class="ic">🛠️</span>
-        <span><span class="t">Sign in as System Administrator</span><br><span class="d">Tariffs · zones/sensors · reports</span></span>
+        <span><span class="t">Sign in as an admin</span><br><span class="d">fees, zones, reports</span></span>
       </button>
     </div>
-    <p class="sso-note">🔒 Authentication simulated. Real system uses HCMUT_SSO (Apereo CAS) → service ticket → /p3/serviceValidate, then a local JWT.</p>
+    <p class="sso-note">Login is faked in this demo. The real one would go through the university login (HCMUT_SSO).</p>
   </div>
 </div>
 
-<!-- ===================== APP ===================== -->
+<!-- app -->
 <div id="app">
   <header class="top">
-    <span class="logo">🅿️</span>
-    <div class="title">IoT-SPMS <small>Smart Parking · HCMUT</small></div>
+    <div class="title">Smart Parking <small>HCMUT</small></div>
     <select class="campus-sel" id="campusSel" onchange="app.render()">
-      <option value="LTK">Cơ sở 1 · Lý Thường Kiệt</option>
-      <option value="DA">Cơ sở 2 · Dĩ An</option>
+      <option value="LTK">Lý Thường Kiệt</option>
+      <option value="DA">Dĩ An</option>
     </select>
     <div class="spacer"></div>
     <span class="pill" id="clock">--:--:--</span>
-    <span class="role-badge" id="roleBadge">—</span>
-    <span class="chip" id="userChip">—</span>
+    <span class="role-badge" id="roleBadge">-</span>
+    <span class="chip" id="userChip">-</span>
     <button class="btn ghost sm" onclick="app.logout()">Logout</button>
   </header>
 
   <main id="main"></main>
 
   <footer>
-    IoT-SPMS MVP · single-file simulation · data hard-coded in-code (no backend) · SE252 project demonstration
+    A single-file demo, data is in the code, no backend. SE252 project.
   </footer>
 </div>
 
-<!-- ===================== MODAL ===================== -->
 <div id="modal"><div class="modal-card" id="modalCard"></div></div>
 
-<script>
-/* ============================================================
-   The application script is loaded below (app.js inlined).
-   ============================================================ */
-</script>
 <script src="app.js"></script>
 </body>
 </html>
