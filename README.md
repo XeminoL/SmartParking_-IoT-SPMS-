@@ -28,8 +28,6 @@ mvp/
 assets/                
 ```
 
-The Markdown files show fine on GitHub, diagrams included. The PDFs are the hand-in version.
-
 ## Main design choices
 
 These are the decisions the rest follows from:
