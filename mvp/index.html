@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Smart Parking (HCMUT) - demo</title>
 <style>
-/* Smart Parking demo. SE aesthetic: serif body, mono for machine data,
-   off-white paper, one restrained accent, hairline borders, no shadows. */
 :root{
   --paper:#FBFAF7; --panel:#ffffff; --ink:#1A1A1A; --muted:#5A5A52; --faint:#8a8a80;
   --rule:#D8D5CC; --rule2:#c7c3b6; --accent:#2A5DB0; --maroon:#A80036;
@@ -21,10 +19,8 @@ body{margin:0; background:var(--paper); color:var(--ink);
   font-feature-settings:"calt" 1;}
 button{font-family:var(--sans); cursor:pointer}
 h1,h2,h3{font-family:var(--serif); margin:0 0 8px; font-weight:600; line-height:1.25}
-/* anything machine-touchable is mono */
 .mono,code,.plate,.money,.pct,.id,.ts,.num{font-family:var(--mono); font-feature-settings:"calt" 1}
 
-/* login */
 #login{position:fixed; inset:0; display:flex; align-items:center; justify-content:center; padding:20px}
 .login-card{width:440px; max-width:94vw; background:var(--panel); border:1px solid var(--rule); padding:34px 32px}
 .login-card h1{font-size:27px; letter-spacing:-.2px}
@@ -39,7 +35,6 @@ h1,h2,h3{font-family:var(--serif); margin:0 0 8px; font-weight:600; line-height:
 .role-btn .d{font-family:var(--mono); color:var(--muted); font-size:12.5px; margin-top:3px}
 .sso-note{margin-top:20px; font-size:13px; color:var(--muted); line-height:1.5}
 
-/* app shell */
 #app{display:none}
 header.top{display:flex; align-items:center; gap:16px; padding:12px 22px;
   background:var(--paper); border-bottom:1px solid var(--ink)}
@@ -65,7 +60,6 @@ main{padding:24px 22px; max-width:1120px; margin:0 auto}
 .cols-2{grid-template-columns:1.55fr 1fr}
 @media(max-width:960px){.cols-2{grid-template-columns:1fr}}
 
-/* sections are ruled, not carded (no shadow, no rounded box) */
 .card{background:transparent; border:none; padding:0; margin-bottom:26px}
 .card h2{font-size:16px; margin-bottom:2px; padding-bottom:6px; border-bottom:1.5px solid var(--ink);
   display:flex; align-items:baseline; gap:8px}
@@ -74,18 +68,15 @@ main{padding:24px 22px; max-width:1120px; margin:0 auto}
 .section-title{font-family:var(--sans); font-size:11px; font-weight:600; letter-spacing:.08em;
   text-transform:uppercase; color:var(--muted); margin:16px 0 8px}
 
-/* summary: mono figures inline, label under, no tiles */
 .summary{display:flex; flex-wrap:wrap; gap:30px; padding:6px 0 2px}
 .summary .s .n{font-family:var(--mono); font-size:24px; color:var(--ink); font-feature-settings:"tnum" 1}
 .summary .s .l{font-family:var(--sans); font-size:12px; color:var(--muted)}
 .summary .s.alarm .n{color:var(--err)}
 
-/* status = mono bracket tag, never a dot */
 .tag{font-family:var(--mono); font-size:11.5px; letter-spacing:.02em; white-space:nowrap}
 .tag::before{content:"["} .tag::after{content:"]"}
 .tag.ok{color:var(--ok)} .tag.warn{color:var(--warn)} .tag.serious{color:#b5561d} .tag.full{color:var(--err)}
 
-/* slot grid: monospace cells, ASCII-ish glyphs */
 .slotgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(22px,1fr)); gap:3px; margin-top:8px}
 .slot{aspect-ratio:1; display:flex; align-items:center; justify-content:center;
   font-family:var(--mono); font-size:11px; border:1px solid var(--rule2); border-radius:0}
@@ -96,7 +87,6 @@ main{padding:24px 22px; max-width:1120px; margin:0 auto}
 .slot.oos{background:#e8e5dc; color:var(--faint)}
 .legend{margin-top:10px; font-family:var(--mono); font-size:12px; color:var(--muted)}
 
-/* booktabs tables: horizontal rules only, no verticals, no zebra */
 table{width:100%; border-collapse:collapse; font-size:14px; margin:4px 0}
 thead th{font-family:var(--sans); font-weight:600; font-size:11px; letter-spacing:.05em; text-transform:uppercase;
   color:var(--muted); text-align:left; padding:6px 12px 6px 0; border-bottom:1.5px solid var(--ink)}
@@ -108,15 +98,6 @@ input,select{font-family:var(--mono); background:var(--panel); border:1px solid 
 input:focus,select:focus{outline:1px solid var(--accent); border-color:var(--accent)}
 label{font-family:var(--sans); font-size:12px; color:var(--muted); display:block; margin-bottom:4px}
 
-/* alarms: mono, bracket-tagged, hairline top rule, no colored left stripe card */
-.alarm-item{display:flex; align-items:baseline; gap:12px; padding:9px 0; border-top:1px solid var(--rule)}
-.alarm-item:first-of-type{border-top:none}
-.alarm-item .ai-b{flex:1}
-.alarm-item .ai-b .t{font-family:var(--mono); font-size:12.5px; color:var(--err)}
-.alarm-item .ai-b .t::before{content:"[!] "}
-.alarm-item .ai-b .d{font-family:var(--mono); font-size:12px; color:var(--muted); margin-top:2px}
-
-/* modal */
 #modal{position:fixed; inset:0; background:rgba(26,26,26,.4); display:none; align-items:center; justify-content:center; z-index:60}
 .modal-card{width:460px; max-width:94vw; background:var(--panel); border:1px solid var(--ink); padding:24px}
 .modal-card h3{font-size:19px; margin-bottom:14px}
@@ -129,7 +110,6 @@ label{font-family:var(--sans); font-size:12px; color:var(--muted); display:block
 .match-ok{font-family:var(--mono); color:var(--ok)} .match-ok::before{content:"[ok] "}
 .match-bad{font-family:var(--mono); color:var(--err)} .match-bad::before{content:"[!] "}
 
-/* tabs: text tabs with a rule, no pill, no fill */
 .tabs{display:flex; gap:22px; margin-bottom:20px; border-bottom:1px solid var(--rule)}
 .tab{font-family:var(--sans); background:transparent; border:none; border-bottom:2px solid transparent;
   color:var(--muted); padding:7px 0; font-size:13.5px; margin-bottom:-1px}
@@ -146,7 +126,6 @@ footer{font-family:var(--mono); color:var(--faint); font-size:12px; padding:22px
 </head>
 <body>
 
-<!-- login -->
 <div id="login">
   <div class="login-card">
     <div class="brand">
@@ -168,11 +147,10 @@ footer{font-family:var(--mono); color:var(--faint); font-size:12px; padding:22px
   </div>
 </div>
 
-<!-- app -->
 <div id="app">
   <header class="top">
     <div class="title">Smart Parking <small>HCMUT</small></div>
-    <select class="campus-sel" id="campusSel" onchange="app.render()">
+    <select class="campus-sel" id="campusSel" onchange="app.setCampus(this.value)">
       <option value="LTK">Lý Thường Kiệt</option>
       <option value="DA">Dĩ An</option>
     </select>

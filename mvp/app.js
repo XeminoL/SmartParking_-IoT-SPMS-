@@ -1,9 +1,5 @@
-// Smart parking demo. Plain JavaScript, data is in the code, no backend.
-// STATE holds everything, sim() drives the fake traffic, the services do
-// the work, and the views draw each role's screen.
 'use strict';
 
-// small helpers
 const $ = (s, r = document) => r.querySelector(s);
 const el = (t, c, h) => { const e = document.createElement(t); if (c) e.className = c; if (h != null) e.innerHTML = h; return e; };
 const pad = n => String(n).padStart(2, '0');
@@ -11,9 +7,9 @@ const fmtTime = d => `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSec
 const fmtVND = n => n.toLocaleString('vi-VN') + ' đ';
 const rnd = (a, b) => a + Math.random() * (b - a);
 const pick = arr => arr[Math.floor(Math.random() * arr.length)];
-let SEQ = 8000; const nextId = () => ++SEQ;
+let SEQ = 8000;
+const nextId = () => ++SEQ;
 
-/* Vietnamese motorbike-style plate generator, e.g. 59-P1 234.56 */
 function genPlate() {
   const prov = pick(['59', '51', '50', '61', '72', '43']);
   const ser = pick('BCDEFGHKLMNPS') + Math.floor(rnd(1, 9));
@@ -21,43 +17,32 @@ function genPlate() {
   return `${prov}-${ser} ${a}.${b}`;
 }
 
-// thresholds the admin can change (green / yellow / full)
 const CONFIG = {
-  greenBelow: 75,   // under 75% is green
-  yellowBelow: 90,  // 75-89 yellow, 90-99 nearly full, 100 full
-  stalenessSec: 8,  // a slot goes unknown if the sensor is quiet this long
-  simSpeed: 1,
-  arrivalRate: 0.55 // chance of an arrival each tick
+  greenBelow: 75,
+  yellowBelow: 90,
+  arrivalRate: 0.55
 };
 
-// price rules
 const POLICIES = [
-  { id: 'P-MB-STD',  name: 'Std Motorbike', vehicle: 'MOTORBIKE', tier: 'all',     ratePerDay: 3000, freeMin: 30, cap: 3000, discount: 0,    validFrom: '2024-01-01' },
-  { id: 'P-MB-STU',  name: 'Student MB',    vehicle: 'MOTORBIKE', tier: 'student', ratePerDay: 3000, freeMin: 30, cap: 3000, discount: 0.15, validFrom: '2024-01-01' },
-  { id: 'P-CAR-STD', name: 'Std Car',       vehicle: 'CAR',       tier: 'all',     ratePerHour: 5000, freeMin: 15, cap: 50000, discount: 0,   validFrom: '2024-01-01' },
+  { id: 'P-MB-STD',  name: 'Std Motorbike', vehicle: 'MOTORBIKE', tier: 'all',     ratePerDay: 3000, freeMin: 30, cap: 3000,  discount: 0,    validFrom: '2024-01-01' },
+  { id: 'P-MB-STU',  name: 'Student MB',    vehicle: 'MOTORBIKE', tier: 'student', ratePerDay: 3000, freeMin: 30, cap: 3000,  discount: 0.15, validFrom: '2024-01-01' },
+  { id: 'P-CAR-STD', name: 'Std Car',       vehicle: 'CAR',       tier: 'all',     ratePerHour: 5000, freeMin: 15, cap: 50000, discount: 0,    validFrom: '2024-01-01' },
   { id: 'P-CAR-STU', name: 'Student Car',   vehicle: 'CAR',       tier: 'student', ratePerHour: 5000, freeMin: 15, cap: 50000, discount: 0.10, validFrom: '2024-01-01' },
-  { id: 'P-VIS',     name: 'Visitor Flat',  vehicle: 'ANY',       tier: 'visitor', flat: 8000, freeMin: 0, cap: 8000, discount: 0,           validFrom: '2024-01-01' }
+  { id: 'P-VIS',     name: 'Visitor Flat',  vehicle: 'ANY',       tier: 'visitor', flat: 8000,        freeMin: 0,  cap: 8000,  discount: 0,    validFrom: '2024-01-01' }
 ];
 
-/* ---------------- Seed: zones + slots per campus ---------------- */
 function buildCampus(prefix, zoneDefs) {
-  const zones = zoneDefs.map(zd => {
+  return zoneDefs.map(zd => {
     const slots = [];
     for (let i = 0; i < zd.cap; i++) {
-      slots.push({
-        id: `${prefix}-${zd.name}-${pad(i + 1)}`,
-        state: 'FREE',            // FREE | OCCUPIED | RESERVED | UNKNOWN | OOS
-        sessionId: null,
-        lastSeen: 0               // sim-second of last sensor update
-      });
+      slots.push({ id: `${prefix}-${zd.name}-${pad(i + 1)}`, state: 'FREE', sessionId: null, lastSeen: 0 });
     }
     return { name: zd.name, vehicle: zd.vehicle, cap: zd.cap, slots };
   });
-  return zones;
 }
 
 const STATE = {
-  now: new Date(2024, 8, 16, 7, 5, 0),   // start ~07:05, peak arrival window
+  now: new Date(2024, 8, 16, 7, 5, 0),
   simSec: 0,
   running: true,
   role: null,
@@ -76,30 +61,26 @@ const STATE = {
       { name: 'C', vehicle: 'CAR',       cap: 20 }
     ]) }
   },
-  sessions: {},        // id -> session
-  events: [],          // audit / event feed (newest first)
-  alarms: [],          // open alarms
-  payments: [],        // settled/failed payments
-  reconBreaks: [],     // reconciliation breaks
-  wallet: 45000,       // demo driver's prepaid wallet
-  driverHistory: [],   // demo driver's own sessions
+  sessions: {},
+  events: [],
+  alarms: [],
+  payments: [],
+  reconBreaks: [],
+  wallet: 45000,
+  driverHistory: [],
   logCount: 0,
   stats: { entries: 0, exits: 0, revenue: 0, denied: 0, mismatch: 0 }
 };
 
-/* Demo member driver identity (would come from SSO+DataCore) */
 const DEMO_DRIVER = { id: 1, hcmutId: '2252001', name: 'Nguyễn Văn A', tier: 'student', vehicle: { plate: genPlate(), type: 'MOTORBIKE', rfid: 'RF-2252001' } };
 
-// the services: everything the app actually does
 const services = {
-  // write a line to the log
   audit(actor, action, tag = 'info') {
     STATE.logCount++;
     STATE.events.unshift({ id: STATE.logCount, ts: new Date(STATE.now), actor, msg: action, tag });
     if (STATE.events.length > 200) STATE.events.pop();
   },
 
-  // free-count and sign state for each area
   zoneFree(zone) { return zone.slots.filter(s => s.state === 'FREE').length; },
   zoneOccPct(zone) {
     const usable = zone.slots.filter(s => s.state !== 'OOS' && s.state !== 'UNKNOWN').length || zone.cap;
@@ -116,14 +97,13 @@ const services = {
   stClass(st) { return { green: 'ok', yellow: 'warn', orange: 'serious', red: 'full' }[st]; },
   currentZones() { return STATE.campuses[STATE.campus].zones; },
   nearestFreeZone(fromName) {
-    const z = this.currentZones().filter(z => z.name !== fromName && this.zoneFree(z) > 0)
-      .sort((a, b) => this.zoneFree(b) - this.zoneFree(a));
-    return z[0] || null;
+    return this.currentZones()
+      .filter(z => z.name !== fromName && this.zoneFree(z) > 0)
+      .sort((a, b) => this.zoneFree(b) - this.zoneFree(a))[0] || null;
   },
   totalFree() { return this.currentZones().reduce((n, z) => n + this.zoneFree(z), 0); },
   totalCap() { return this.currentZones().reduce((n, z) => n + z.cap, 0); },
 
-  /* ---- Find a free slot for a vehicle type ---- */
   findFreeSlot(vehicleType) {
     for (const z of this.currentZones()) {
       if (z.vehicle !== vehicleType) continue;
@@ -133,7 +113,6 @@ const services = {
     return null;
   },
 
-  // let a vehicle in
   entry({ plate, type, tier, rfid, member, name }) {
     const spot = this.findFreeSlot(type);
     if (!spot) {
@@ -152,61 +131,52 @@ const services = {
     };
     spot.slot.state = 'OCCUPIED';
     spot.slot.sessionId = id;
-    spot.slot.lastSeen = STATE.simSec;   // sensor confirms occupied
+    spot.slot.lastSeen = STATE.simSec;
     STATE.sessions[id] = sess;
     STATE.stats.entries++;
     this.audit('Gate', `Let in ${plate} to Zone ${sess.zone} (${sess.slot})${member ? '' : ', visitor ticket ' + sess.ticket}`, 'grant');
     return { ok: true, session: sess };
   },
 
-  // work out the fee
   resolvePolicy(sess) {
     const vt = p => p.vehicle === sess.type || p.vehicle === 'ANY';
-    // 1) exact tier match first (e.g. student), 2) then generic "all", 3) then visitor
     return POLICIES.find(p => vt(p) && p.tier === sess.tier)
       || POLICIES.find(p => vt(p) && p.tier === 'all' && sess.member)
       || POLICIES.find(p => p.tier === 'visitor');
   },
   computeFee(sess) {
-    const durMin = Math.max(1, Math.round((STATE.simSec - sess.entrySec) * 3)); // 1 sim-sec ≈ 3 "minutes"
+    const durMin = Math.max(1, Math.round((STATE.simSec - sess.entrySec) * 3));
     const pol = this.resolvePolicy(sess);
     let amount;
     if (pol.flat != null) amount = pol.flat;
     else if (durMin <= pol.freeMin) amount = 0;
-    else if (pol.ratePerDay) amount = pol.ratePerDay;                    // motorbike: per-day flat block
-    else { const hrs = Math.ceil(durMin / 60); amount = hrs * pol.ratePerHour; } // car: per-hour, round up
+    else if (pol.ratePerDay) amount = pol.ratePerDay;
+    else amount = Math.ceil(durMin / 60) * pol.ratePerHour;
     amount = Math.round(amount * (1 - pol.discount));
     if (pol.cap) amount = Math.min(amount, pol.cap);
     return { durMin, amount, policy: pol };
   },
 
-  // let a vehicle out: check the plate, take payment, close the session
   exit(sessId, { method = 'WALLET', exitPlate = null, forceMismatch = false } = {}) {
     const sess = STATE.sessions[sessId];
     if (!sess || sess.state !== 'ACTIVE') return { ok: false, reason: 'NO_SESSION' };
     const ep = exitPlate || (forceMismatch ? genPlate() : sess.entryPlate);
     sess.exitPlate = ep;
-    // plate check: entry plate must match exit plate
     if (ep !== sess.entryPlate) {
       sess.state = 'HELD';
       STATE.stats.mismatch++;
-      services.raiseAlarm('PLATE_MISMATCH', `Session ${sess.id}: entry ${sess.entryPlate}, exit ${ep}`, sess.id, true);
+      this.raiseAlarm('PLATE_MISMATCH', `Session ${sess.id}: entry ${sess.entryPlate}, exit ${ep}`, sess.id, true);
       this.audit('Gate', `Plate mismatch at exit, session ${sess.id}`, 'alarm');
       return { ok: false, reason: 'MISMATCH', session: sess };
     }
     const { durMin, amount, policy } = this.computeFee(sess);
-    // Payment
-    const pay = services.pay(sess, amount, method);
+    const pay = this.pay(sess, amount, method);
     if (!pay.ok) return { ok: false, reason: pay.reason, amount, durMin, session: sess };
-    // save the amount on the record so a later price change doesn't touch it
     sess.billing = { amount, durMin, policyId: policy.id, ruleVersion: policy.validFrom, method, frozenAt: new Date(STATE.now) };
     sess.state = 'COMPLETED';
     sess.exitSec = STATE.simSec;
     sess.exitTime = new Date(STATE.now);
-    // free the slot + sensor confirms vacant
-    const z = this.currentZones().find(z => z.name === sess.zone) ||
-      Object.values(STATE.campuses).flatMap(c => c.zones).find(z => z.slots.some(s => s.id === sess.slot));
-    const slot = z && z.slots.find(s => s.id === sess.slot);
+    const slot = this.findSlot(sess.slot);
     if (slot) { slot.state = 'FREE'; slot.sessionId = null; slot.lastSeen = STATE.simSec; }
     STATE.stats.exits++;
     STATE.stats.revenue += amount;
@@ -215,9 +185,18 @@ const services = {
     return { ok: true, amount, durMin, policy, session: sess };
   },
 
-  // take a payment (fake gateway)
+  findSlot(slotId) {
+    for (const c of Object.values(STATE.campuses)) {
+      for (const z of c.zones) {
+        const s = z.slots.find(s => s.id === slotId);
+        if (s) return s;
+      }
+    }
+    return null;
+  },
+
   pay(sess, amount, method) {
-    if (amount === 0) { return { ok: true, txn: null }; }
+    if (amount === 0) return { ok: true, txn: null };
     if (method === 'WALLET') {
       if (STATE.wallet < amount) return { ok: false, reason: 'INSUFFICIENT' };
       STATE.wallet -= amount;
@@ -228,14 +207,12 @@ const services = {
       status: 'SETTLED', idemKey: 'idem-' + sess.id, at: new Date(STATE.now)
     };
     STATE.payments.unshift(txn);
-    // now and then pretend the bank confirmation got lost, so the daily check has something to catch
     if (method === 'BKPAY' && Math.random() < 0.12) {
       STATE.reconBreaks.push({ txn: txn.gatewayTxnId, amount, reason: 'Local SETTLED, no bank settlement line', at: new Date(STATE.now) });
     }
     return { ok: true, txn };
   },
 
-  /* ---- Alarms ---- */
   raiseAlarm(type, detail, sessId, crit = false) {
     STATE.alarms.unshift({ id: nextId(), type, detail, sessId, crit, at: new Date(STATE.now), ack: false });
   },
@@ -246,15 +223,12 @@ const services = {
   }
 };
 
-// the simulation: vehicles arrive and leave, sensors sometimes drop out
 const sim = {
   tick() {
     if (!STATE.running) return;
-    // advance clock (1 real tick ≈ 20 sim-seconds so "minutes" pass)
     STATE.simSec += 1;
     STATE.now = new Date(STATE.now.getTime() + 20000);
 
-    // a few arrivals per tick, fewer once the lot is nearly full
     const occNow = 1 - services.totalFree() / Math.max(1, services.totalCap());
     const burst = occNow < 0.85 ? Math.ceil(rnd(1, 3.5)) : 1;
     for (let k = 0; k < burst; k++) {
@@ -269,25 +243,19 @@ const sim = {
       });
     }
 
-    // some leave; more of them leave when the lot is fuller, so it doesn't drain
     const active = Object.values(STATE.sessions).filter(s => s.state === 'ACTIVE');
-    const occFrac = 1 - services.totalFree() / Math.max(1, services.totalCap());
-    const departProb = 0.01 + occFrac * 0.04;
+    const departProb = 0.01 + occNow * 0.04;
     active.forEach(s => {
-      const staying = STATE.simSec - s.entrySec;
-      if (staying > 6 && Math.random() < departProb) {
-        const mismatch = Math.random() < 0.04;   // a few leave with a wrong plate
-        services.exit(s.id, { method: pick(['WALLET', 'BKPAY', 'CASH']), forceMismatch: mismatch });
+      if (STATE.simSec - s.entrySec > 6 && Math.random() < departProb) {
+        services.exit(s.id, { method: pick(['WALLET', 'BKPAY', 'CASH']), forceMismatch: Math.random() < 0.04 });
       }
     });
 
-    // a sensor sometimes goes quiet; that slot becomes unknown
     this.currentSlots().forEach(slot => {
       if ((slot.state === 'FREE' || slot.state === 'OCCUPIED') && Math.random() < 0.004) {
         slot.state = 'UNKNOWN';
         services.audit('Sensor', `Slot ${slot.id} went quiet, marked unknown`, 'sensor');
       }
-      // stale UNKNOWN sometimes recovers with a fresh report
       if (slot.state === 'UNKNOWN' && Math.random() < 0.08) {
         slot.state = slot.sessionId ? 'OCCUPIED' : 'FREE';
         slot.lastSeen = STATE.simSec;
@@ -299,9 +267,9 @@ const sim = {
   currentSlots() { return STATE.campuses[STATE.campus].zones.flatMap(z => z.slots); }
 };
 
-// login, logout, render, and the button handlers
 const app = {
   tab: { driver: 'avail', operator: 'board', admin: 'tariff' },
+  mySession: null,
 
   login(role) {
     STATE.role = role;
@@ -313,7 +281,6 @@ const app = {
     $('#login').style.display = 'none';
     $('#app').style.display = 'block';
     $('#roleBadge').textContent = { driver: 'Driver', operator: 'Operator', admin: 'Admin' }[role];
-    $('#roleBadge').className = 'role-badge';
     $('#userChip').textContent = STATE.user.name;
     services.audit(STATE.user.name, `Logged in as ${role}`, 'info');
     this.render();
@@ -335,22 +302,21 @@ const app = {
   },
 
   setTab(role, t) { this.tab[role] = t; this.render(); },
+  setCampus(c) { STATE.campus = c; this.render(); },
   toggleSim() { STATE.running = !STATE.running; this.render(); },
 
-  /* modal helpers */
   modal(html) { $('#modalCard').innerHTML = html; $('#modal').style.display = 'flex'; },
   closeModal() { $('#modal').style.display = 'none'; },
 
-  /* ---- Driver actions ---- */
   driverEnter() {
     const r = services.entry({ plate: DEMO_DRIVER.vehicle.plate, type: DEMO_DRIVER.vehicle.type, tier: DEMO_DRIVER.tier, rfid: DEMO_DRIVER.vehicle.rfid, member: true, name: DEMO_DRIVER.name });
     if (!r.ok) { this.modal(`<h3>Entry refused</h3><p class="muted">The lot is full for ${DEMO_DRIVER.vehicle.type}. Try another zone.</p><button class="btn" onclick="app.closeModal()">OK</button>`); return; }
     r.session.hcmutId = DEMO_DRIVER.hcmutId;
-    this._mySession = r.session.id;
+    this.mySession = r.session.id;
     this.render();
   },
   driverExit() {
-    const id = this._mySession;
+    const id = this.mySession;
     if (!id || !STATE.sessions[id] || STATE.sessions[id].state !== 'ACTIVE') { this.modal('<h3>No open session</h3><p class="muted">You are not parked right now. Use the entry button first.</p><button class="btn" onclick="app.closeModal()">OK</button>'); return; }
     const sess = STATE.sessions[id];
     const { durMin, amount, policy } = services.computeFee(sess);
@@ -375,12 +341,11 @@ const app = {
     const r = services.exit(id, { method });
     this.closeModal();
     if (!r.ok && r.reason === 'INSUFFICIENT') { this.modal('<h3>Insufficient balance</h3><p class="muted">Top up your wallet or choose BKPay.</p><button class="btn" onclick="app.closeModal()">OK</button>'); return; }
-    this._mySession = null;
+    this.mySession = null;
     this.render();
   },
   topup() { STATE.wallet += 50000; services.audit(STATE.user.name, 'Topped up balance by 50,000 đ', 'pay'); this.render(); },
 
-  /* ---- Operator actions ---- */
   inspectAlarm(id) {
     const a = STATE.alarms.find(a => a.id === id); if (!a) return;
     const sess = STATE.sessions[a.sessId];
@@ -402,8 +367,7 @@ const app = {
       const { amount } = services.computeFee(sess);
       services.pay(sess, amount, 'CASH');
       sess.state = 'COMPLETED'; sess.exitSec = STATE.simSec;
-      const slot = sim.currentSlots().find(s => s.id === sess.slot) ||
-        Object.values(STATE.campuses).flatMap(c => c.zones).flatMap(z => z.slots).find(s => s.id === sess.slot);
+      const slot = services.findSlot(sess.slot);
       if (slot) { slot.state = 'FREE'; slot.sessionId = null; }
       STATE.stats.exits++; STATE.stats.revenue += amount;
       services.audit(STATE.user.name, `Sorted out held session ${sessId}, closed with cash`, 'info');
@@ -417,14 +381,13 @@ const app = {
     this.render();
   },
   lookupPlate() {
-    const q = ($('#plateSearch') || {}).value || '';
-    const found = Object.values(STATE.sessions).filter(s => s.state === 'ACTIVE' && s.plate.includes(q.trim()));
+    const q = (($('#plateSearch') || {}).value || '').trim();
+    const found = Object.values(STATE.sessions).filter(s => s.state === 'ACTIVE' && s.plate.includes(q));
     this.modal(`<h3>Vehicle lookup</h3><p class="muted">"${q}", ${found.length} match(es)</p>
       ${found.slice(0, 8).map(s => `<div class="kv"><span class="k">${s.plate}</span><span>Zone ${s.zone}, ${s.slot}, parked ${(STATE.simSec - s.entrySec) * 3}min</span></div>`).join('') || '<p class="muted">Nothing found.</p>'}
       <button class="btn" style="margin-top:12px" onclick="app.closeModal()">Close</button>`);
   },
 
-  /* ---- Admin actions ---- */
   saveThresholds() {
     CONFIG.greenBelow = +$('#thGreen').value;
     CONFIG.yellowBelow = +$('#thYellow').value;
@@ -432,21 +395,19 @@ const app = {
     this.render();
   },
   toggleSlotOOS() {
-    const z = services.currentZones()[0];
-    const s = z.slots.find(s => s.state === 'FREE');
+    const s = services.currentZones()[0].slots.find(s => s.state === 'FREE');
     if (s) { s.state = 'OOS'; services.audit(STATE.user.name, `Set slot ${s.id} OUT_OF_SERVICE`, 'info'); }
     this.render();
   }
 };
 
-/* -------- shared render bits -------- */
 function tilesHtml(tiles) {
   return `<div class="summary">${tiles.map(t => `<div class="s${t.alarm ? ' alarm' : ''}"><div class="n">${t.v}</div><div class="l">${t.k}</div></div>`).join('')}</div>`;
 }
 function zoneRowsHtml() {
   const rows = services.currentZones().map(z => {
-    const free = services.zoneFree(z), pct = services.zoneOccPct(z), st = services.signState(pct);
-    return `<tr><td>Zone ${z.name}</td><td>${free} / ${z.cap}</td><td>${pct}%</td>
+    const st = services.signState(services.zoneOccPct(z));
+    return `<tr><td>Zone ${z.name}</td><td>${services.zoneFree(z)} / ${z.cap}</td><td>${services.zoneOccPct(z)}%</td>
       <td><span class="tag ${services.stClass(st)}">${services.signLabel(st)}</span></td></tr>`;
   }).join('');
   return `<table><thead><tr><th>Zone</th><th>Free</th><th>Full</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`;
@@ -469,25 +430,21 @@ function simCtlHtml() {
   </div>`;
 }
 
-// the screens, one function per role
 const views = {
-  // driver
   driver(root) {
     const tabs = [['avail', 'Availability'], ['wallet', 'Wallet and history']];
     root.appendChild(el('div', 'tabs', tabs.map(([k, l]) => `<button class="tab ${app.tab.driver === k ? 'active' : ''}" onclick="app.setTab('driver','${k}')">${l}</button>`).join('')));
 
     if (app.tab.driver === 'avail') {
-      const my = app._mySession && STATE.sessions[app._mySession] && STATE.sessions[app._mySession].state === 'ACTIVE' ? STATE.sessions[app._mySession] : null;
+      const my = app.mySession && STATE.sessions[app.mySession] && STATE.sessions[app.mySession].state === 'ACTIVE' ? STATE.sessions[app.mySession] : null;
       const grid = el('div', 'grid cols-2');
-      // left: zones + slot grid
       const left = el('div', 'card');
       left.innerHTML = `<h2>Live availability <span class="hint">updated a moment ago</span></h2>${zoneRowsHtml()}
         <div class="section-title" style="margin-top:14px">Zone A slots</div>${slotGridHtml(services.currentZones()[0])}
         <p class="legend">green = free, grey = taken, ? = unknown (sensor quiet)</p>`;
       grid.appendChild(left);
-      // right: my session + entrance signage
       const right = el('div');
-      const z0 = services.currentZones()[0], pct0 = services.zoneOccPct(z0), st0 = services.signState(pct0);
+      const st0 = services.signState(services.zoneOccPct(services.currentZones()[0]));
       right.innerHTML = `
         <div class="card" style="margin-bottom:16px">
           <h2>Entrance sign</h2>
@@ -524,7 +481,6 @@ const views = {
     }
   },
 
-  // operator
   operator(root) {
     const tabs = [['board', 'Live board'], ['feed', 'Event log']];
     root.appendChild(el('div', 'tabs', tabs.map(([k, l]) => `<button class="tab ${app.tab.operator === k ? 'active' : ''}" onclick="app.setTab('operator','${k}')">${l}</button>`).join('')));
@@ -559,7 +515,6 @@ const views = {
     }
   },
 
-  // admin
   admin(root) {
     const tabs = [['tariff', 'Fees and signs'], ['zones', 'Zones and sensors'], ['reports', 'Reports'], ['audit', 'Log']];
     root.appendChild(el('div', 'tabs', tabs.map(([k, l]) => `<button class="tab ${app.tab.admin === k ? 'active' : ''}" onclick="app.setTab('admin','${k}')">${l}</button>`).join('')));
@@ -619,7 +574,6 @@ const views = {
   }
 };
 
-// run the simulation a bit before login so the lot starts partly full
 (function seed() {
   for (let i = 0; i < 220; i++) sim.tick();
 })();
@@ -629,9 +583,3 @@ STATE.running = true;
 
 setInterval(() => sim.tick(), 1500);
 setInterval(() => { if (STATE.role) $('#clock').textContent = fmtTime(STATE.now); }, 500);
-
-// Optional auto-login for demos / screenshots:  index.html?role=operator
-(function autoLogin() {
-  const r = new URLSearchParams(location.search).get('role');
-  if (r && ['driver', 'operator', 'admin'].includes(r)) app.login(r);
-})();
